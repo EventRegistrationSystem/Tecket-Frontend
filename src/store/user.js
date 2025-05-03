@@ -30,6 +30,10 @@ export const useUserStore = defineStore("user", {
       this.accessToken = null;
       localStorage.removeItem('accessToken');
     },
+    clearRole() {
+      this.role = null;
+      localStorage.removeItem('role');
+    }
   },
 
 });
