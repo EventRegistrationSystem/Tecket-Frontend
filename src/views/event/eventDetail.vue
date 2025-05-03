@@ -101,7 +101,7 @@ onMounted(async () => {
     const userStore = useUserStore()
     // Prioritize getting tokens from the store
     const token = userStore.accessToken || localStorage.getItem("accessToken")
-    const res = await fetch(`http://localhost:3000/api/events/${eventId}`, {
+    const res = await fetch(import.meta.env.VITE_API_BASE_URL + `/events/${eventId}`, {
       headers: token
         ? {
             "Authorization": `Bearer ${token}`,
