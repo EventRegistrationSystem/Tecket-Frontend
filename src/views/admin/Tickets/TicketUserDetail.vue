@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { usersMockData } from '@/mock/usersMock.js'
 
-// 获取路由参数 id，并转换成数字
+// 获取路由参数 id，并转换成数字 11
 const route = useRoute()
 const router = useRouter()
 const userId = parseInt(route.params.id)
