@@ -241,7 +241,7 @@ export default {
         return;
       }
 
-      const url = "http://localhost:3000/api/auth/register";
+      const url = import.meta.env.VITE_API_BASE_URL + "/auth/register";
 
       await fetch(url, {
         method: "POST",
@@ -268,9 +268,11 @@ export default {
             this.errors.server = responseData.message;
           } else {
             const accessToken = this.dt.accessToken;
+            const role = this.dt.user.role;
             // Store accessToken into storage
             if (accessToken) {
               userStore.setAccessToken(accessToken);
+              userStore.setRole(role);
               router.push("/");
             } else {
               window.alert("Login successfully but no token is store!");

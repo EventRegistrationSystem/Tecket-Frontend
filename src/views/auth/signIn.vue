@@ -72,6 +72,7 @@ import Footer from "@/components/footer.vue";
 import router from "@/router";
 import { useUserStore } from "@/store/user";
 
+
 export default {
   components: {
     navbar,
@@ -122,7 +123,7 @@ export default {
       }
 
       const userStore = useUserStore();
-      const url = "http://localhost:3000/api/auth/login";
+      const url = import.meta.env.VITE_API_BASE_URL + '/auth/login';
       // Send data to backend
 
       await fetch(url, {
@@ -143,10 +144,12 @@ export default {
         .then((responseData) => {
           this.dt = responseData.data;
           const accessToken = this.dt.accessToken;
+          const role = this.dt.user.role;
 
           // Store token retrieved from API
           if (accessToken) {
             userStore.setAccessToken(accessToken);
+            userStore.setRole(role);
             router.push("/");
           } else {
             window.alert("Login successfully but no token is store!");
