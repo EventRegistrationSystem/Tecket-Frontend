@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://localhost:3000/api' // TODO: replace with your real backend URL
-
 // ==========================
 // Event-related API methods
 // ==========================
@@ -10,7 +8,7 @@ const API_BASE_URL = 'http://localhost:3000/api' // TODO: replace with your real
  */
 export const fetchEventsData = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/events`)
+    const response = await fetch(import.meta.env.VITE_API_BASE_URL + `/events`)
     if (!response.ok) {
       throw new Error(`Request failed with status: ${response.status}`)
     }

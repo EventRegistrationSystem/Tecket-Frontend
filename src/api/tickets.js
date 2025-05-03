@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://localhost:3000/api' // TODO: replace with your real backend URL
-
 // ==========================
 // Ticket-related API methods
 // ==========================
@@ -11,7 +9,7 @@ const API_BASE_URL = 'http://localhost:3000/api' // TODO: replace with your real
  */
 export const fetchTicketTypes = async (eventId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/tickets`)
+    const response = await fetch(import.meta.env.VITE_API_BASE_URL + `/events/${eventId}/tickets`)
     if (!response.ok) {
       throw new Error(`Request failed with status: ${response.status}`)
     }
