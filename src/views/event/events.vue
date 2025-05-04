@@ -234,7 +234,7 @@ const userStore = useUserStore();
 onMounted(async () => {
   try {
     const token = userStore.accessToken || localStorage.getItem("accessToken");
-    const res = await fetch("http://localhost:3000/api/events", {
+    const res = await fetch("https://eventregistrationsystem-backend.onrender.com/api/events", {
       headers: token
         ? {
             "Authorization": `Bearer ${token}`,
