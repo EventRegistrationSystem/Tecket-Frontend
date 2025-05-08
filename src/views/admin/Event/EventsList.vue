@@ -180,11 +180,9 @@ const getStatusClass = (status) => {
             </div>
             <select v-model="statusFilter" class="form-select" style="max-width: 16rem;">
               <option value="all">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Upcoming">Upcoming</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
               <option value="PUBLISHED">PUBLISHED</option>
+              <option value="Draft">Draft</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
           </div>
           <!-- New event button -->

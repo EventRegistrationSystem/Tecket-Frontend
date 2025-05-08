@@ -26,17 +26,6 @@ defineEmits(['toggle-sidebar']);
 
     <!-- Right section -->
     <div class="d-flex align-items-center gap-3">
-      <!-- Notifications -->
-      <div class="position-relative">
-        <button class="p-2 rounded-circle border-0 no-border-btn">
-          <i class="pi pi-bell text-secondary"></i>
-        </button>
-        <span
-          class="position-absolute bg-danger text-white rounded-circle d-flex align-items-center justify-content-center"
-          style="top: -0.25rem; right: -0.25rem; width: 1.25rem; height: 1.25rem;">
-          5
-        </span>
-      </div>
 
       <!-- User profile -->
       <div class="d-flex align-items-center" style="cursor: pointer;" @click="toggleUserMenu">

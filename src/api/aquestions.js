@@ -1,7 +1,7 @@
 // src/api/aquestions.js
 import { authFetch } from './authRefresh.js';
 
-const API_BASE_URL = 'https://eventregistrationsystem-backend.onrender.com/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 /**
  * Helper: Parse JSON and throw errors uniformly
