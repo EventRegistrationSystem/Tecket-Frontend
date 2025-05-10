@@ -15,7 +15,7 @@ export async function authFetch(input, init = {}) {
     ...(init.headers || {}),
     'Authorization': `Bearer ${userStore.accessToken}`
   };
-
+  // If you need to bring Cookie, also add:
   // init.credentials = 'include';
 
   let res = await fetch(input, init);
