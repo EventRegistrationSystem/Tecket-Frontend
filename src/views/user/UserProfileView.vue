@@ -36,7 +36,7 @@ onMounted(async () => {
   handleResize(); // Initial check
 
   const accessToken = localStorage.getItem("accessToken");
-  await fetchData("http://localhost:3000/api/user/profile", accessToken);
+  await fetchData(import.meta.env.VITE_API_BASE_URL + "/user/profile", accessToken);
 });
 
 onUnmounted(() => {

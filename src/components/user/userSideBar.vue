@@ -21,7 +21,6 @@ const activeItem = computed(() => {
   return 'dashboard';
 })
 
-// 菜单项列表，新增“Questionnaire”选项
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'pi pi-home', route: '/user/profile' },
   { id: 'events', label: 'Events', icon: 'pi pi-calendar', route: '/user/events' },
@@ -30,19 +29,16 @@ const menuItems = [
 ]
 
 
-// 根据是否折叠设置宽度样式
 const sidebarStyle = computed(() => {
   return {
     width: props.collapsed ? '4rem' : '15rem'
   }
 })
 
-// 跳转至指定路由
 const navigateTo = (item) => {
   router.push(item.route)
 }
 
-// 切换侧边栏折叠状态
 const toggleSidebar = () => {
   emit('toggle-sidebar')
 }
@@ -56,7 +52,7 @@ const toggleSidebar = () => {
     <div class="d-flex align-items-center border-bottom border-secondary p-3">
       <img v-if="props.collapsed" src="../../assets/cat.jpeg" alt="RegiMaster" style="height: 2rem;" />
       <div v-else class="fs-4 fw-bold">
-        <a href="/">RegiMaster</a>
+        <a href="/" style="text-decoration: none;">RegiMaster</a>
       </div>
       <button v-if="props.collapsed" @click="toggleSidebar" class="text-white rounded-circle p-1 ms-auto"
               style="background: none; border: none;">

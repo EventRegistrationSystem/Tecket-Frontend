@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { usersMockData } from '@/mock/usersMock.js'
+import { fetchAllUsersData } from '@/api/users'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -10,35 +11,37 @@ const roleFilter = ref('all')
 const sortBy = ref('name')
 const sortOrder = ref('asc')
 
-const usersData = ref([...usersMockData])
+let usersData = ref([])
 
-// 将角色数字转换为文本
+onMounted(async () => {
+  usersData.value = await fetchAllUsersData();
+})
+
 const getRoleText = (role) => {
   switch (role) {
-    case 1:
-      return 'Admin'
-    case 2:
-      return 'Manager'
-    case 3:
-      return 'User'
+    case 'ADMIN':
+      return 'ADMIN'
+    case 'ORGANIZER':
+      return 'ORGANIZER'
+    case 'PARTICIPANT':
+      return 'PARTICIPANT'
     default:
-      return 'Unknown'
+      return 'role'
   }
 }
 
 const filteredUsers = computed(() => {
   return usersData.value
     .filter(user => {
-      // 角色筛选（转换为字符串后进行比较）
       if (roleFilter.value !== 'all' && user.role.toString() !== roleFilter.value) {
         return false
       }
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase()
         return (
-          (user.first_name + ' ' + user.last_name).toLowerCase().includes(query) ||
+          (user.firstName + ' ' + user.lastName).toLowerCase().includes(query) ||
           user.email.toLowerCase().includes(query) ||
-          user.phone_no.toLowerCase().includes(query) ||
+          user.phoneNo.toLowerCase().includes(query) ||
           getRoleText(user.role).toLowerCase().includes(query)
         )
       }
@@ -47,42 +50,38 @@ const filteredUsers = computed(() => {
     .sort((a, b) => {
       let comparison = 0
       if (sortBy.value === 'name') {
-        comparison = (a.first_name + ' ' + a.last_name).localeCompare(b.first_name + ' ' + b.last_name)
+        comparison = (a.firstName + ' ' + a.lastName).localeCompare(b.firstName + ' ' + b.lastName)
       } else if (sortBy.value === 'registrationDate') {
-        comparison = new Date(a.created_at) - new Date(b.created_at)
+        comparison = new Date(a.createdAt) - new Date(b.createdAt)
       }
       return sortOrder.value === 'asc' ? comparison : -comparison
     })
 })
 
-// 切换排序顺序
 const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
 }
 
-// 跳转到用户详情页面
 const viewUserDetails = (userId) => {
   router.push(`/admin/users/${userId}`)
 }
 
-// 创建新用户
+
 const createNewUser = () => {
   router.push('/admin/users/create')
 }
 
-// 编辑用户
 const editUser = (userId) => {
   router.push(`/admin/users/edit/${userId}`)
 }
 
-// 删除用户（确认后进行删除）
 const deleteUser = (userId) => {
   if (confirm('Are you sure you want to delete this user?')) {
     usersData.value = usersData.value.filter(user => user.id !== userId)
+    deleteUser(userId);
   }
 }
 
-// 格式化日期（使用 created_at 字段）
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -120,9 +119,9 @@ const formatDate = (dateString) => {
             <!-- 角色筛选 -->
             <select v-model="roleFilter" class="form-select" style="max-width: 16rem;">
               <option value="all">All Roles</option>
-              <option value="1">Admin</option>
-              <option value="2">Manager</option>
-              <option value="3">User</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="ORGANIZER">ORGANIZER</option>
+              <option value="PARTICIPANT">PARTICIPANT</option>
             </select>
           </div>
           <!-- 创建用户按钮 -->
@@ -160,12 +159,12 @@ const formatDate = (dateString) => {
             <tbody>
               <tr v-for="user in filteredUsers" :key="user.id" class="border-bottom">
                 <td class="px-3 py-2">
-                  <div class="fw-medium text-dark">{{ user.first_name }} {{ user.last_name }}</div>
+                  <div class="fw-medium text-dark">{{ user.firstName }} {{ user.lastName }}</div>
                 </td>
                 <td class="px-3 py-2 text-dark">{{ user.email }}</td>
-                <td class="px-3 py-2 text-dark">{{ user.phone_no }}</td>
+                <td class="px-3 py-2 text-dark">{{ user.phoneNo }}</td>
                 <td class="px-3 py-2 text-dark">{{ getRoleText(user.role) }}</td>
-                <td class="px-3 py-2 text-dark">{{ formatDate(user.created_at) }}</td>
+                <td class="px-3 py-2 text-dark">{{ formatDate(user.createdAt) }}</td>
                 <td class="px-3 py-2">
                   <div class="d-flex justify-content-center gap-2">
                     <button @click="viewUserDetails(user.id)" class="btn btn-link text-primary p-0" title="View Details">
