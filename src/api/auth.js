@@ -1,6 +1,6 @@
 // src/api/auth.js
 const API_BASE_URL = 'https://eventregistrationsystem-backend.onrender.com/api';
-export const BASE_URL = API_BASE_URL || import.meta.env.VITE_API_BASE_URL;
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || API_BASE_URL;
 
 /**
  * Call refresh-token endpoint to get a new accessToken.
