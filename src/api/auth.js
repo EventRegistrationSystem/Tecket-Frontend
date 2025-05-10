@@ -1,5 +1,5 @@
 // src/api/auth.js
-const API_BASE = 'https://eventregistrationsystem-backend.onrender.com/api'
+const API_BASE = 'http://localhost:3000/api'
 
 /**
  * Call refresh-token endpoint to get a new accessToken.

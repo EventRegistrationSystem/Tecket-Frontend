@@ -389,11 +389,9 @@ const removeOption = (question, optionIndex) => {
                 <div class="col-12 col-md-6">
                   <label class="form-label">Status</label>
                   <select v-model="eventForm.status" class="form-select">
-                    <option value="Upcoming">Upcoming</option>
-                    <option value="Active">Active</option>
-                    <option value="Completed">Completed</option>
+                    <option value="PUBLISHED">PUBLISHED</option>
+                    <option value="Draft">Draft</option>
                     <option value="Cancelled">Cancelled</option>
-                    <option value="PUBLISHED">Published</option>
                   </select>
                 </div>
               </div>
