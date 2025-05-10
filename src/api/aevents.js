@@ -1,7 +1,6 @@
+// src/api/aevents.js
 import { authFetch } from './authRefresh.js';
-
-const API_BASE_URL = 'https://eventregistrationsystem-backend.onrender.com/api';
-const url = import.meta.env.VITE_API_BASE_URL
+import { BASE_URL } from './auth.js';
 
 /**
  * Helper: Parse JSON and throw errors uniformly
@@ -16,22 +15,16 @@ const handleResponse = async (res) => {
   return json;
 };
 
-// ==========================
-// Event-related APIs
-// ==========================
-
 /**
- * Fetch events with pagination info
- * @param {Object} params - page, limit, search, eventType, location, isFree, startDate, endDate, myEvents, status
- * @returns {Promise<{ events: Array, pagination: Object }>}
+ * Fetch paginated list of events
  */
 export const fetchEvents = async (params = {}) => {
-  const url = new URL(`${url}/events`);
+  const requestUrl = new URL(`${BASE_URL}/events`);
   Object.entries(params).forEach(([key, val]) => {
-    if (val != null) url.searchParams.append(key, String(val));
+    if (val != null) requestUrl.searchParams.append(key, String(val));
   });
 
-  const res = await authFetch(url.toString());
+  const res = await authFetch(requestUrl.toString());
   const json = await handleResponse(res);
   return {
     events: json.data.events,
@@ -41,11 +34,9 @@ export const fetchEvents = async (params = {}) => {
 
 /**
  * Fetch single event details
- * @param {number} eventId
- * @returns {Promise<Object>} Event object
  */
 export const fetchEventDetails = async (eventId) => {
-  const res = await authFetch(`${url}/events/${eventId}`);
+  const res = await authFetch(`${BASE_URL}/events/${eventId}`);
   const json = await handleResponse(res);
   return json.data;
 };
@@ -56,7 +47,7 @@ export const fetchEventDetails = async (eventId) => {
  * @returns {Promise<Object>} Created event
  */
 export const createEvent = async (eventData) => {
-  const res = await authFetch(`${url}/events`, {
+  const res = await authFetch(`${API_URL}/events`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(eventData)
@@ -72,7 +63,7 @@ export const createEvent = async (eventData) => {
  * @returns {Promise<Object>} Updated event
  */
 export const updateEvent = async (eventId, updatedData) => {
-  const res = await authFetch(`${url}/events/${eventId}`, {
+  const res = await authFetch(`${API_URL }/events/${eventId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updatedData)
@@ -87,7 +78,7 @@ export const updateEvent = async (eventId, updatedData) => {
  * @returns {Promise<string>} Success message
  */
 export const deleteEvent = async (eventId) => {
-  const res = await authFetch(`${url}/events/${eventId}`, {
+  const res = await authFetch(`${API_URL }/events/${eventId}`, {
     method: 'DELETE'
   });
   const json = await handleResponse(res);
