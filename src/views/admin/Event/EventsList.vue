@@ -2,29 +2,29 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-// Encapsulate API methods in /api/events.js
-import { fetchEventsData } from '@/api/events.js'
+import { fetchEvents } from '@/api/aevents.js'
 
 const router = useRouter()
+
+// Searching, status filtering and sorting status
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const sortBy = ref('date')
 const sortOrder = ref('desc')
 
-// Initialize eventsData as empty array; will be populated after API response
+// Used to store event data as well as load and error states
 const eventsData = ref([])
-
-// Define loading state and error message
 const loading = ref(false)
 const error = ref(null)
 
-// Call API on component mount
+// Call API to get event data when mounting
 onMounted(async () => {
   loading.value = true
   try {
-    // Call the real API (ensure the endpoint matches the backend)
-    const data = await fetchEventsData()
-    eventsData.value = data
+    // Call fetchEvents and the returned data structure is { events, pagination }
+    const response = await fetchEvents()
+    // Here it is assumed that each event returned by the backend has a startDateTime field (ISO string)
+    eventsData.value = response.events
   } catch (err) {
     error.value = 'Failed to load events data. Please try again later.'
     console.error("Failed to fetch events data:", err)
@@ -33,21 +33,25 @@ onMounted(async () => {
   }
 })
 
-// Computed property for filtered and sorted events
+// Calculate a filtered list of events based on search, status filter and sort fields
 const filteredEvents = computed(() => {
   return eventsData.value
     .filter(event => {
-      // Apply status filter
+      // State filtering: if the selected state is not "all", only events with matching state are returned
       if (statusFilter.value !== 'all' && event.status !== statusFilter.value) {
         return false
       }
-      // Apply search filter (case insensitive)
+      // Search filtering: differentiated matching of event names, locations and organisers
       if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase()
+        // If organizer is an object, splice firstName and lastName.
+        const organizer = typeof event.organizer === 'string'
+          ? event.organizer
+          : `${event.organizer.firstName} ${event.organizer.lastName}`
         return (
           event.name.toLowerCase().includes(query) ||
           event.location.toLowerCase().includes(query) ||
-          event.organizer.toLowerCase().includes(query)
+          organizer.toLowerCase().includes(query)
         )
       }
       return true
@@ -57,7 +61,8 @@ const filteredEvents = computed(() => {
       if (sortBy.value === 'name') {
         comparison = a.name.localeCompare(b.name)
       } else if (sortBy.value === 'date') {
-        comparison = new Date(a.date) - new Date(b.date)
+        // Comparison using the startDateTime field
+        comparison = new Date(a.startDateTime) - new Date(b.startDateTime)
       } else if (sortBy.value === 'tickets') {
         comparison = a.ticketsSold - b.ticketsSold
       } else if (sortBy.value === 'revenue') {
@@ -69,10 +74,12 @@ const filteredEvents = computed(() => {
     })
 })
 
+// Toggle Sort Order
 const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
 }
 
+// Page Jump Method
 const viewEventDetails = (eventId) => {
   router.push(`/admin/events/${eventId}`)
 }
@@ -85,21 +92,46 @@ const editEvent = (eventId) => {
   router.push(`/admin/events/edit/${eventId}`)
 }
 
-const deleteEvent = (eventId) => {
+const deleteEvent = async (eventId) => {
   if (confirm('Are you sure you want to delete this event?')) {
-    // Send delete request to backend as needed, and update local data
-    eventsData.value = eventsData.value.filter(event => event.id !== eventId)
+    try {
+      // Call the API to delete the event (if the deleteEvent method is provided in the API module)
+      await deleteEvent(eventId)
+      // Update local data after successful deletion
+      eventsData.value = eventsData.value.filter(event => event.id !== eventId)
+    } catch (err) {
+      console.error("Failed to delete event:", err)
+      alert('Failed to delete event. Please try again later.')
+    }
   }
 }
 
+// Formatted date (en-AU)
+// Add a judgement on the validity of the date string to ensure it is displayed correctly
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+  if (!dateString) return ''
+  const dateObj = new Date(dateString)
+  if (isNaN(dateObj)) return ''
+  return dateObj.toLocaleDateString('en-AU', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   })
 }
 
+// Formatting time (en-AU)
+// Add a judgement on the validity of the date string to ensure it is displayed correctly
+const formatTime = (dateString) => {
+  if (!dateString) return ''
+  const dateObj = new Date(dateString)
+  if (isNaN(dateObj)) return ''
+  return dateObj.toLocaleTimeString('en-AU', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// Returns the CSS class name according to the event status
 const getStatusClass = (status) => {
   switch (status) {
     case 'Active':
@@ -110,6 +142,8 @@ const getStatusClass = (status) => {
       return 'bg-light text-dark'
     case 'Cancelled':
       return 'bg-light text-danger'
+    case 'PUBLISHED':
+      return 'bg-light text-primary'
     default:
       return 'bg-light text-dark'
   }
@@ -119,20 +153,20 @@ const getStatusClass = (status) => {
 <template>
   <AdminLayout>
     <div class="p-4">
-      <!-- Header -->
+      <!-- Page header -->
       <div class="mb-4">
         <h1 class="fs-2 fw-bold text-dark">Event Management</h1>
         <p class="text-muted mt-1">Create, edit and manage your events</p>
       </div>
-      
-      <!-- Loading & Error -->
+
+      <!-- Loading and error messages -->
       <div v-if="loading" class="alert alert-info">Loading events...</div>
       <div v-if="error" class="alert alert-danger">{{ error }}</div>
-      
-      <!-- Action Bar -->
+
+      <!-- Action bar: search, status filter, new event button -->
       <div class="bg-white rounded shadow-sm p-4 mb-4">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3">
-          <!-- Filters and Search -->
+          <!-- Search & Filter -->
           <div class="d-flex flex-column flex-sm-row gap-3">
             <div class="position-relative">
               <input 
@@ -146,34 +180,33 @@ const getStatusClass = (status) => {
             </div>
             <select v-model="statusFilter" class="form-select" style="max-width: 16rem;">
               <option value="all">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Upcoming">Upcoming</option>
-              <option value="Completed">Completed</option>
+              <option value="PUBLISHED">PUBLISHED</option>
+              <option value="Draft">Draft</option>
               <option value="Cancelled">Cancelled</option>
             </select>
           </div>
-          <!-- Create Button -->
+          <!-- New event button -->
           <button @click="createNewEvent" class="btn btn-primary d-flex align-items-center">
             <i class="pi pi-plus me-2"></i>
             Create New Event
           </button>
         </div>
       </div>
-      
-      <!-- Events Table -->
+
+      <!-- Event List Form -->
       <div class="bg-white rounded shadow-sm overflow-hidden">
         <div class="table-responsive">
           <table class="table table-hover mb-0">
             <thead>
               <tr class="bg-light border-bottom">
                 <th class="px-3 py-2 text-start fs-6 text-muted">
-                  <div style="cursor: pointer;" class="d-flex align-items-center" @click="sortBy = 'name'; toggleSortOrder()">
+                  <div class="d-flex align-items-center" style="cursor: pointer;" @click="sortBy = 'name'; toggleSortOrder()">
                     Event Name
                     <i v-if="sortBy === 'name'" :class="sortOrder === 'asc' ? 'pi pi-sort-up' : 'pi pi-sort-down'" class="ms-1"></i>
                   </div>
                 </th>
                 <th class="px-3 py-2 text-start fs-6 text-muted">
-                  <div style="cursor: pointer;" class="d-flex align-items-center" @click="sortBy = 'date'; toggleSortOrder()">
+                  <div class="d-flex align-items-center" style="cursor: pointer;" @click="sortBy = 'date'; toggleSortOrder()">
                     Date
                     <i v-if="sortBy === 'date'" :class="sortOrder === 'asc' ? 'pi pi-sort-up' : 'pi pi-sort-down'" class="ms-1"></i>
                   </div>
@@ -181,13 +214,13 @@ const getStatusClass = (status) => {
                 <th class="px-3 py-2 text-start fs-6 text-muted">Location</th>
                 <th class="px-3 py-2 text-start fs-6 text-muted">Status</th>
                 <th class="px-3 py-2 text-start fs-6 text-muted">
-                  <div style="cursor: pointer;" class="d-flex align-items-center" @click="sortBy = 'tickets'; toggleSortOrder()">
+                  <div class="d-flex align-items-center" style="cursor: pointer;" @click="sortBy = 'tickets'; toggleSortOrder()">
                     Tickets Sold
                     <i v-if="sortBy === 'tickets'" :class="sortOrder === 'asc' ? 'pi pi-sort-up' : 'pi pi-sort-down'" class="ms-1"></i>
                   </div>
                 </th>
                 <th class="px-3 py-2 text-start fs-6 text-muted">
-                  <div style="cursor: pointer;" class="d-flex align-items-center" @click="sortBy = 'revenue'; toggleSortOrder()">
+                  <div class="d-flex align-items-center" style="cursor: pointer;" @click="sortBy = 'revenue'; toggleSortOrder()">
                     Revenue
                     <i v-if="sortBy === 'revenue'" :class="sortOrder === 'asc' ? 'pi pi-sort-up' : 'pi pi-sort-down'" class="ms-1"></i>
                   </div>
@@ -199,11 +232,15 @@ const getStatusClass = (status) => {
               <tr v-for="event in filteredEvents" :key="event.id" class="border-bottom">
                 <td class="px-3 py-2">
                   <div class="fw-medium text-dark">{{ event.name }}</div>
-                  <div class="fs-6 text-muted">{{ event.organizer }}</div>
+                  <div class="fs-6 text-muted">
+                    {{ typeof event.organizer === 'string' 
+                        ? event.organizer 
+                        : event.organizer.firstName + ' ' + event.organizer.lastName }}
+                  </div>
                 </td>
                 <td class="px-3 py-2">
-                  <div class="text-dark">{{ formatDate(event.date) }}</div>
-                  <div class="fs-6 text-muted">{{ event.time }}</div>
+                  <div class="text-dark">{{ formatDate(event.startDateTime) }}</div>
+                  <div class="fs-6 text-muted">{{ formatTime(event.startDateTime) }}</div>
                 </td>
                 <td class="px-3 py-2 text-dark">{{ event.location }}</td>
                 <td class="px-3 py-2">
@@ -213,26 +250,27 @@ const getStatusClass = (status) => {
                 </td>
                 <td class="px-3 py-2 text-dark">
                   {{ event.ticketsSold }} / {{ event.capacity }}
-                  <div class="progress" style="height: 0.25rem; margin-top: 0.25rem;">
-                    <div class="progress-bar bg-primary" role="progressbar" :style="{ width: (event.ticketsSold / event.capacity) * 100 + '%' }"></div>
+                  <div class="progress mt-1" style="height: 0.25rem;">
+                    <div
+                      class="progress-bar bg-primary"
+                      role="progressbar"
+                      :style="{ width: (event.ticketsSold / event.capacity) * 100 + '%' }"
+                    ></div>
                   </div>
                 </td>
                 <td class="px-3 py-2 text-dark">{{ event.revenue }}</td>
-                <td class="px-3 py-2">
-                  <div class="d-flex justify-content-center gap-2">
-                    <button @click="viewEventDetails(event.id)" class="btn btn-link text-primary p-0" title="View Details">
-                      <i class="pi pi-eye"></i>
-                    </button>
-                    <button @click="editEvent(event.id)" class="btn btn-link text-success p-0" title="Edit Event">
-                      <i class="pi pi-pencil"></i>
-                    </button>
-                    <button @click="deleteEvent(event.id)" class="btn btn-link text-danger p-0" title="Delete Event">
-                      <i class="pi pi-trash"></i>
-                    </button>
-                  </div>
+                <td class="px-3 py-2 text-center">
+                  <button @click="viewEventDetails(event.id)" class="btn btn-link text-primary p-0" title="View Details">
+                    <i class="pi pi-eye"></i>
+                  </button>
+                  <button @click="editEvent(event.id)" class="btn btn-link text-success p-0" title="Edit Event">
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button @click="deleteEvent(event.id)" class="btn btn-link text-danger p-0" title="Delete Event">
+                    <i class="pi pi-trash"></i>
+                  </button>
                 </td>
               </tr>
-              <!-- Empty state -->
               <tr v-if="filteredEvents.length === 0 && !loading">
                 <td colspan="7" class="px-3 py-4 text-center text-muted">
                   <div class="d-flex flex-column align-items-center">
@@ -245,7 +283,8 @@ const getStatusClass = (status) => {
             </tbody>
           </table>
         </div>
-        <!-- Pagination (simplified) -->
+
+        <!-- Simple Paging Example -->
         <div class="px-3 py-2 d-flex align-items-center justify-content-between border-top">
           <div class="fs-6 text-muted">
             Showing <span class="fw-medium">{{ filteredEvents.length }}</span> of <span class="fw-medium">{{ eventsData.length }}</span> events
@@ -260,3 +299,7 @@ const getStatusClass = (status) => {
     </div>
   </AdminLayout>
 </template>
+
+<style scoped>
+ul { margin: 0; padding-left: 1rem; }
+</style>

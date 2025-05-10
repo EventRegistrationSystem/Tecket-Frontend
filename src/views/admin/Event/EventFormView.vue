@@ -3,24 +3,31 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 
-import { ticketsMockData } from '@/mock/ticketsMockData'
-import { eventsMockData } from '@/mock/eventsMock.js'
-import { locationsMockData } from '@/mock/locationsMock.js'
+// Importing events and ticket related interfaces from the API layer (both internally using authFetch for authorisation transfer)
+import { fetchEventDetails, createEvent, updateEvent } from '@/api/aevents.js'
+import { fetchTicketTypes, createTicketType, updateTicketType } from '@/api/atickets.js'
+
 
 const route = useRoute()
 const router = useRouter()
+
+// Determine if you are in edit mode (routes containing '/edit/' are in edit mode)
 const isEditMode = computed(() => route.path.includes('/edit/'))
 const eventId = isEditMode.value ? parseInt(route.params.id) : null
+
+// Define states such as loading, saving, etc.
 const loading = ref(true)
 const saving = ref(false)
 const activeTab = ref('basic')
-const questions = ref([])
+const questions = ref([]) 
 
-// Form state，默认初始化为空或默认值
+// form status, fields are initialised by default in create mode
+// Split the original date field into startDate and endDate.
 const eventForm = ref({
   name: '',
   description: '',
-  date: '',
+  startDate: '',
+  endDate: '',
   startTime: '',
   endTime: '',
   location: '',
@@ -33,65 +40,108 @@ const eventForm = ref({
   capacity: 100,
   status: 'Upcoming',
   imageUrl: '',
-  features: ['', '', ''],
 })
 
-// 使用新的 tickets mock 数据来初始化票种
-const ticketTypes = ref([...ticketsMockData])
-// 使用 locationsMockData 的位置数据
-const locations = locationsMockData
+// Ticket data (taken from interface when editing, default empty array when creating)
+const ticketTypes = ref([])
 
-onMounted(() => {
+// Error messages for form validation
+const errors = ref({})
+
+// helper function: extract date from ISO time string, format is YYYY-MM-DD
+const parseDate = (dateTimeString) => {
+  if (!dateTimeString) return ''
+  const dateObj = new Date(dateTimeString)
+  if (isNaN(dateObj)) return ''
+  const year = dateObj.getFullYear()
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
+  const day = dateObj.getDate().toString().padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Auxiliary function: extracts the time from the ISO time string in the format HH:MM (24-hour format)
+const parseTime = (dateTimeString) => {
+  if (!dateTimeString) return ''
+  const dateObj = new Date(dateTimeString)
+  if (isNaN(dateObj)) return ''
+  const hours = dateObj.getHours().toString().padStart(2, '0')
+  const minutes = dateObj.getMinutes().toString().padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+onMounted(async () => {
   if (isEditMode.value) {
-    // 模拟 API 调用，从 eventsMockData 中获取编辑模式下的 event 数据
-    setTimeout(() => {
-      const eventData = eventsMockData.find(e => e.id === eventId)
+    try {
+      loading.value = true
+      // Getting event details from the API
+      const eventData = await fetchEventDetails(eventId)
       if (eventData) {
+        // Populate the eventForm to convert the startDateTime and endDateTime returned by the API to extract the date and time, respectively.
         eventForm.value = {
           name: eventData.name || '',
           description: eventData.description || '',
-          date: eventData.date || '',
-          startTime: '',    // 若 eventsMockData 中未提供，可自行设置默认值
-          endTime: '',      // 同上
+          startDate: parseDate(eventData.startDateTime),
+          endDate: parseDate(eventData.endDateTime),
+          startTime: parseTime(eventData.startDateTime),
+          endTime: parseTime(eventData.endDateTime),
           location: eventData.location || '',
-          // 对于地址信息，若 eventsMockData 中提供了 address，则使用，否则为空
           address: eventData.address || '',
-          city: eventData.city || '',     // 若有，可使用；否则默认空字符串
+          city: eventData.city || '',
           state: eventData.state || '',
           zipCode: eventData.zipCode || '',
-          organizer: eventData.organizer || '',
+          organizer: typeof eventData.organizer === 'string'
+            ? eventData.organizer
+            : (eventData.organizer.firstName + ' ' + eventData.organizer.lastName),
           organizerContact: eventData.organizerContact || '',
           capacity: eventData.capacity || 100,
           status: eventData.status || 'Upcoming',
-          imageUrl: eventData.imageUrl || 'https://placehold.co/600x400/eee/ccc?text=Tech+Conference',
-          // 使用 eventData.features，如果存在且不为空，否则使用默认数组
-          features: (eventData.features && eventData.features.length > 0) ? eventData.features : ['', '', '']
+          imageUrl: eventData.imageUrl || 'https://placehold.co/600x400/eee/ccc?text=Event+Image',
         }
       }
-      // 票种数据转换：将 ticketsMockData 中的 quantity_total 映射到 quantity 字段
-      ticketTypes.value = ticketsMockData.map(ticket => ({
-        id: ticket.id,
-        name: ticket.name,
-        price: ticket.price,
-        quantity: ticket.quantity_total, // 总票数
-        description: ticket.description,
-      }))
+      // Get the ticket type data, get the current event ticket type list through API interface
+      ticketTypes.value = await fetchTicketTypes(eventId)
+    } catch (err) {
+      console.error('Error fetching event data:', err)
+      // Setting default data to avoid page errors when exceptions occur
+      eventForm.value = {
+        name: '',
+        description: '',
+        startDate: '',
+        endDate: '',
+        startTime: '',
+        endTime: '',
+        location: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        organizer: '',
+        organizerContact: '',
+        capacity: 100,
+        status: 'Upcoming',
+        imageUrl: '',
+      }
+      ticketTypes.value = []
+    } finally {
       loading.value = false
-    }, 500)
+    }
   } else {
-    // 创建模式 - 表单保持默认初始化，直接结束 loading
+    // Direct end of load state in create mode
     loading.value = false
   }
 })
 
-// 以下函数保持不变
+// Verify that the form inputs are correct
 const validateForm = () => {
   errors.value = {}
   if (!eventForm.value.name) {
     errors.value.name = 'Event name is required'
   }
-  if (!eventForm.value.date) {
-    errors.value.date = 'Event date is required'
+  if (!eventForm.value.startDate) {
+    errors.value.startDate = 'Event start date is required'
+  }
+  if (!eventForm.value.endDate) {
+    errors.value.endDate = 'Event end date is required'
   }
   if (!eventForm.value.location) {
     errors.value.location = 'Location is required'
@@ -105,20 +155,13 @@ const validateForm = () => {
   return Object.keys(errors.value).length === 0
 }
 
-const addFeature = () => {
-  eventForm.value.features.push('')
-}
-
-const removeFeature = (index) => {
-  eventForm.value.features.splice(index, 1)
-}
-
 const addTicketType = () => {
+  // Temporary ID is used by default when adding a ticket (the backend will return the official ID on subsequent saves)
   ticketTypes.value.push({
-    id: Date.now(), // 临时 ID
+    id: Date.now(), // Temporary IDs use the current timestamp
     name: '',
     price: 0.0,
-    quantity: 0,
+    quantity: 0, // Corresponds to the API field quantity_total
     description: '',
   })
 }
@@ -127,20 +170,58 @@ const removeTicketType = (index) => {
   ticketTypes.value.splice(index, 1)
 }
 
-const saveEvent = () => {
+// Save events: APIs are called according to the editing or creation mode respectively
+const saveEvent = async () => {
   if (!validateForm()) {
     return
   }
   saving.value = true
-  // 模拟 API 保存调用
-  setTimeout(() => {
-    console.log('Event saved:', {
-      event: eventForm.value,
-      tickets: ticketTypes.value,
-    })
-    saving.value = false
+  try {
+    if (isEditMode.value) {
+      // Edit mode: call updateEvent to update the event details.
+      await updateEvent(eventId, eventForm.value)
+      // Processing ticket data: iterating through each ticket type
+      for (const ticket of ticketTypes.value) {
+        // Assume that existing tickets (ID returned by the API is numeric) need to be updated, otherwise they are considered new tickets
+        if (typeof ticket.id === 'number' && ticket.id < 10000000000) {
+          // Updated ticket type data
+          await updateTicketType(eventId, ticket.id, {
+            name: ticket.name,
+            price: ticket.price,
+            quantityTotal: ticket.quantity,
+            description: ticket.description,
+          })
+        } else {
+          // New Ticket: Create a Ticket
+          await createTicketType(eventId, {
+            name: ticket.name,
+            price: ticket.price,
+            quantityTotal: ticket.quantity,
+            description: ticket.description,
+          })
+        }
+      }
+    } else {
+      // Creation mode: call createEvent to create a new event.
+      const createdEvent = await createEvent(eventForm.value)
+      const newEventId = createdEvent.id
+      // Creation of ticket data
+      for (const ticket of ticketTypes.value) {
+        await createTicketType(newEventId, {
+          name: ticket.name,
+          price: ticket.price,
+          quantityTotal: ticket.quantity,
+          description: ticket.description,
+        })
+      }
+    }
     router.push('/admin/events')
-  }, 1000)
+  } catch (err) {
+    console.error('Error saving event:', err)
+    // A more detailed error message can be added here
+  } finally {
+    saving.value = false
+  }
 }
 
 const cancelForm = () => {
@@ -174,14 +255,12 @@ const removeOption = (question, optionIndex) => {
     question.options.splice(optionIndex, 1)
   }
 }
-
-const errors = ref({})
 </script>
 
 <template>
   <AdminLayout>
     <div class="p-4">
-      <!-- Loading 状态 -->
+      <!-- Loading status -->
       <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height: 16rem;">
         <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
           <span class="visually-hidden">Loading...</span>
@@ -189,7 +268,7 @@ const errors = ref({})
       </div>
       
       <div v-else>
-        <!-- 表单头部 -->
+        <!-- Form Header -->
         <div class="mb-4">
           <h1 class="fs-2 fw-bold text-dark">
             {{ isEditMode ? 'Edit Event' : 'Create New Event' }}
@@ -199,7 +278,7 @@ const errors = ref({})
           </p>
         </div>
         
-        <!-- 表单 Tab 导航 -->
+        <!-- Forms Tab Navigation -->
         <div class="bg-white rounded shadow-sm mb-4">
           <div class="d-flex border-bottom overflow-auto">
             <button @click="activeTab = 'basic'" type="button"
@@ -208,23 +287,11 @@ const errors = ref({})
               <i class="pi pi-info-circle me-1"></i>
               Basic Information
             </button>
-            <button @click="activeTab = 'location'" type="button"
-              class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn"
-              :class="activeTab === 'location' ? 'text-primary' : 'text-muted'">
-              <i class="pi pi-map-marker me-1"></i>
-              Location
-            </button>
             <button @click="activeTab = 'tickets'" type="button"
               class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn"
               :class="activeTab === 'tickets' ? 'text-primary' : 'text-muted'">
               <i class="pi pi-ticket me-1"></i>
               Tickets
-            </button>
-            <button @click="activeTab = 'features'" type="button"
-              class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn"
-              :class="activeTab === 'features' ? 'text-primary' : 'text-muted'">
-              <i class="pi pi-list me-1"></i>
-              Features
             </button>
             <button @click="activeTab = 'questionnaire'" type="button"
               class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn"
@@ -235,7 +302,7 @@ const errors = ref({})
           </div>
         </div>
         
-        <!-- 表单内容 -->
+        <!-- Form content -->
         <div class="bg-white rounded shadow-sm p-4">
           <form @submit.prevent="saveEvent">
             <!-- Basic Info Tab -->
@@ -255,22 +322,48 @@ const errors = ref({})
                 <textarea v-model="eventForm.description" placeholder="Describe your event" rows="4"
                   class="form-control"></textarea>
               </div>
+              <!-- Location Field -->
+              <div class="mb-3">
+                <label class="form-label">
+                  Location <span class="text-danger">*</span>
+                </label>
+                <input v-model="eventForm.location" type="text" placeholder="Enter venue or location" class="form-control"
+                  :class="{ 'is-invalid': errors.location }" />
+                <div v-if="errors.location" class="invalid-feedback">
+                  {{ errors.location }}
+                </div>
+              </div>
+              <div class="mb-3">
+                <p class="small fst-italic text-muted">
+                  The address information helps attendees locate your event. It will be displayed on the event details page.
+                </p>
+              </div>
               <div class="row g-3">
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                   <label class="form-label">
-                    Date <span class="text-danger">*</span>
+                    Start Date <span class="text-danger">*</span>
                   </label>
-                  <input v-model="eventForm.date" type="date" class="form-control"
-                    :class="{ 'is-invalid': errors.date }" />
-                  <div v-if="errors.date" class="invalid-feedback">
-                    {{ errors.date }}
+                  <input v-model="eventForm.startDate" type="date" class="form-control"
+                    :class="{ 'is-invalid': errors.startDate }" />
+                  <div v-if="errors.startDate" class="invalid-feedback">
+                    {{ errors.startDate }}
                   </div>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
+                  <label class="form-label">
+                    End Date <span class="text-danger">*</span>
+                  </label>
+                  <input v-model="eventForm.endDate" type="date" class="form-control"
+                    :class="{ 'is-invalid': errors.endDate }" />
+                  <div v-if="errors.endDate" class="invalid-feedback">
+                    {{ errors.endDate }}
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
                   <label class="form-label">Start Time</label>
                   <input v-model="eventForm.startTime" type="time" class="form-control" />
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                   <label class="form-label">End Time</label>
                   <input v-model="eventForm.endTime" type="time" class="form-control" />
                 </div>
@@ -279,11 +372,6 @@ const errors = ref({})
                 <div class="col-12 col-md-6">
                   <label class="form-label">Organizer</label>
                   <input v-model="eventForm.organizer" type="text" placeholder="Organizing company or person"
-                    class="form-control" />
-                </div>
-                <div class="col-12 col-md-6">
-                  <label class="form-label">Organizer Contact</label>
-                  <input v-model="eventForm.organizerContact" type="email" placeholder="Contact email"
                     class="form-control" />
                 </div>
               </div>
@@ -301,9 +389,8 @@ const errors = ref({})
                 <div class="col-12 col-md-6">
                   <label class="form-label">Status</label>
                   <select v-model="eventForm.status" class="form-select">
-                    <option value="Upcoming">Upcoming</option>
-                    <option value="Active">Active</option>
-                    <option value="Completed">Completed</option>
+                    <option value="PUBLISHED">PUBLISHED</option>
+                    <option value="Draft">Draft</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
@@ -314,41 +401,6 @@ const errors = ref({})
                 <div class="form-text">
                   Enter a URL for the event image. For best results, use a 16:9 aspect ratio image.
                 </div>
-              </div>
-            </div>
-            
-            <!-- Location Tab -->
-            <div v-if="activeTab === 'location'" class="mb-4">
-              <div class="mb-3">
-                <label class="form-label">
-                  Venue <span class="text-danger">*</span>
-                </label>
-                <select v-model="eventForm.location" class="form-select" :class="{ 'is-invalid': errors.location }">
-                  <option value="">Select a venue</option>
-                  <option v-for="loc in locations" :key="loc" :value="loc">{{ loc }}</option>
-                  <option value="other">Other (specify below)</option>
-                </select>
-                <div v-if="errors.location" class="invalid-feedback">{{ errors.location }}</div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Address</label>
-                <input v-model="eventForm.address" type="text" placeholder="Street address" class="form-control mb-3" />
-                <div class="row g-3">
-                  <div class="col-12 col-md-4">
-                    <input v-model="eventForm.city" type="text" placeholder="City" class="form-control" />
-                  </div>
-                  <div class="col-12 col-md-4">
-                    <input v-model="eventForm.state" type="text" placeholder="State" class="form-control" />
-                  </div>
-                  <div class="col-12 col-md-4">
-                    <input v-model="eventForm.zipCode" type="text" placeholder="Zip Code" class="form-control" />
-                  </div>
-                </div>
-              </div>
-              <div class="mb-3">
-                <p class="small fst-italic text-muted">
-                  The address information helps attendees locate your event. It will be displayed on the event details page.
-                </p>
               </div>
             </div>
             
@@ -372,7 +424,7 @@ const errors = ref({})
                   </div>
                   <div class="col-12 col-md-6">
                     <label class="form-label">Description</label>
-                    <input v-model="ticket.description" type="text" placeholder="Brief description of this ticket type" class="form-control" />
+                    <input v-model="ticket.description" type="text" placeholder="Brief description" class="form-control" />
                   </div>
                 </div>
                 <div class="row g-3">
@@ -399,27 +451,7 @@ const errors = ref({})
                 </p>
               </div>
             </div>
-            
-            <!-- Features Tab -->
-            <div v-if="activeTab === 'features'" class="mb-4">
-              <div>
-                <label class="form-label mb-3">Event Features</label>
-                <p class="small text-muted mb-3">
-                  List the key features or highlights of your event that would attract attendees.
-                </p>
-                <div v-for="(feature, index) in eventForm.features" :key="index" class="d-flex align-items-center mb-3">
-                  <input v-model="eventForm.features[index]" type="text" placeholder="e.g. Networking opportunities, Free refreshments, etc." class="form-control" />
-                  <button @click="removeFeature(index)" type="button" class="btn btn-link text-danger ms-2" :disabled="eventForm.features.length <= 1">
-                    <i class="pi pi-times"></i>
-                  </button>
-                </div>
-                <button @click="addFeature" type="button" class="btn btn-link text-primary mt-2">
-                  <i class="pi pi-plus me-1"></i>
-                  Add Another Feature
-                </button>
-              </div>
-            </div>
-            
+ 
             <!-- Questionnaire Tab -->
             <div v-if="activeTab === 'questionnaire'" class="mb-4">
               <div class="d-flex justify-content-between align-items-center mb-3">
@@ -492,7 +524,8 @@ const errors = ref({})
                     <label class="form-label mb-2">Options</label>
                     <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="d-flex align-items-center mb-2">
                       <input v-model="question.options[optionIndex]" type="text" placeholder="Option text" class="form-control" />
-                      <button @click="removeOption(question, optionIndex)" type="button" class="btn btn-link text-danger ms-2" :disabled="question.options.length <= 1">
+                      <button @click="removeOption(question, optionIndex)" type="button" class="btn btn-link text-danger ms-2"
+                        :disabled="question.options.length <= 1">
                         <i class="pi pi-times"></i>
                       </button>
                     </div>
@@ -525,7 +558,7 @@ const errors = ref({})
               </div>
             </div>
             
-            <!-- Form Actions -->
+            <!-- Form Action Buttons -->
             <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3">
               <button @click="cancelForm" type="button" class="btn btn-outline-secondary">Cancel</button>
               <button type="submit" class="btn btn-primary d-flex align-items-center" :disabled="saving">
@@ -548,5 +581,3 @@ const errors = ref({})
   background-color: #e9ecef;
 }
 </style>
-
-
