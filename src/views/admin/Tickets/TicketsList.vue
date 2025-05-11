@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { fetchEvents } from '@/api/aevents.js'
-import { fetchTicketTypes } from '@/api/atickets.js'
+import { fetchTicketTypes,deleteTicketType } from '@/api/atickets.js'
 
 const url = import.meta.env.VITE_API_BASE_URL
 const router = useRouter()
