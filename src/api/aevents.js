@@ -7,13 +7,26 @@ import { BASE_URL } from './auth.js';
  * @param {Response} res
  * @returns {Promise<Object>} json
  */
+
 const handleResponse = async (res) => {
-  const json = await res.json();
+  const contentType = res.headers.get('content-type') || ''
+
   if (!res.ok) {
-    throw new Error(json.message || json.error || `Request failed with status ${res.status}`);
+
+    const errorText = contentType.includes('application/json')
+      ? (await res.json()).message
+      : await res.text()
+    throw new Error(errorText || `Request failed with status ${res.status}`)
   }
-  return json;
-};
+
+
+  if (contentType.includes('application/json')) {
+    return res.json()
+  } else {
+
+    return {}
+  }
+}
 
 /**
  * Fetch paginated list of events

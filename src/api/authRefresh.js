@@ -16,25 +16,25 @@ export async function authFetch(input, init = {}) {
     'Authorization': `Bearer ${userStore.accessToken}`
   };
   // If you need to bring Cookie, also add:
-  // init.credentials = 'include';
+  //  init.credentials = 'include';
 
   let res = await fetch(input, init);
 
-  if (res.status === 401) {
-    try {
-      const newToken = await refreshAccessToken();
-      userStore.setAccessToken(newToken);
+  // if (res.status === 401) {
+  //   try {
+  //     const newToken = await refreshAccessToken();
+  //     userStore.setAccessToken(newToken);
 
-      // Retry original request with new token
-      init.headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(input, init);
-    } catch (err) {
+  //     // Retry original request with new token
+  //     init.headers['Authorization'] = `Bearer ${newToken}`;
+  //     res = await fetch(input, init);
+  //   } catch (err) {
 
-      userStore.clearAccessToken();
-      window.location.href = '/signIn';
-      throw err;
-    }
-  }
+  //     userStore.clearAccessToken();
+  //     window.location.href = '/signIn';
+  //     throw err;
+  //   }
+  // }
 
   return res;
 }
