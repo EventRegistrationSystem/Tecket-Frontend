@@ -128,8 +128,8 @@ const routes = [
     component: () => import("@/views/admin/Tickets/TicketTypeCreate.vue"),
   },
   {
-    path: "/admin/tickets/edit/:id",
-    name: "Ticketedit",
+    path: "/admin/tickets/:eventId/edit/:ticketId",
+    name: "TicketEdit",
     component: () => import("@/views/admin/Tickets/TicketTypeEdit.vue"),
   },
   {
