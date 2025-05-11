@@ -11,14 +11,12 @@ const handleResponse = async (res) => {
   const contentType = res.headers.get('content-type') || '';
 
   if (!res.ok) {
-    // 解析错误信息
     const errorText = contentType.includes('application/json')
       ? (await res.json()).message
       : await res.text();
     throw new Error(errorText || `Request failed with status ${res.status}`);
   }
 
-  // 返回 JSON 或空对象
   if (contentType.includes('application/json')) {
     return await res.json();
   }

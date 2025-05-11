@@ -123,7 +123,7 @@ const routes = [
       import("@/views/admin/Tickets/TicketsParticipantsDetail.vue"),
   },
   {
-    path: "/admin/tickets/create",
+    path: "/admin/events/:eventId/tickets/create",
     name: "TicketTypeCreate",
     component: () => import("@/views/admin/Tickets/TicketTypeCreate.vue"),
   },

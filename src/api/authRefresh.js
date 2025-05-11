@@ -22,22 +22,22 @@ export async function authFetch(input, init = {}) {
   // First attempt
   let response = await fetch(input, init);
 
-  // If Unauthorized, try refresh once
-  if (response.status === 401) {
-    try {
-      const newToken = await refreshAccessToken();
-      userStore.setAccessToken(newToken);
+  // // If Unauthorized, try refresh once
+  // if (response.status === 401) {
+  //   try {
+  //     const newToken = await refreshAccessToken();
+  //     userStore.setAccessToken(newToken);
 
-      // Retry original request with new token
-      init.headers['Authorization'] = `Bearer ${newToken}`;
-      response = await fetch(input, init);
-    } catch (err) {
-      // Refresh failed: clear tokens and redirect to login
-      userStore.clearAccessToken();
-      window.location.href = '/signIn';
-      throw err;
-    }
-  }
+  //     // Retry original request with new token
+  //     init.headers['Authorization'] = `Bearer ${newToken}`;
+  //     response = await fetch(input, init);
+  //   } catch (err) {
+  //     // Refresh failed: clear tokens and redirect to login
+  //     userStore.clearAccessToken();
+  //     window.location.href = '/signIn';
+  //     throw err;
+  //   }
+  // }
 
   return response;
 }
