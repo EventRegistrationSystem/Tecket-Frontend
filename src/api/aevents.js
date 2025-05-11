@@ -5,39 +5,38 @@ import { BASE_URL } from './auth.js';
 /**
  * Helper: Parse JSON and throw errors uniformly
  * @param {Response} res
- * @returns {Promise<Object>} json
+ * @returns {Promise<Object>} json data or empty object
  */
-
 const handleResponse = async (res) => {
-  const contentType = res.headers.get('content-type') || ''
+  const contentType = res.headers.get('content-type') || '';
 
   if (!res.ok) {
-
+    // 解析错误信息
     const errorText = contentType.includes('application/json')
       ? (await res.json()).message
-      : await res.text()
-    throw new Error(errorText || `Request failed with status ${res.status}`)
+      : await res.text();
+    throw new Error(errorText || `Request failed with status ${res.status}`);
   }
 
-
+  // 返回 JSON 或空对象
   if (contentType.includes('application/json')) {
-    return res.json()
-  } else {
-
-    return {}
+    return await res.json();
   }
-}
+  return {};
+};
 
 /**
  * Fetch paginated list of events
+ * @param {Object} params - Query parameters (page, limit, filters)
+ * @returns {Promise<{ events: Array, pagination: Object }>} 
  */
 export const fetchEvents = async (params = {}) => {
-  const requestUrl = new URL(`${BASE_URL}/events`);
+  const url = new URL(`${BASE_URL}/events`);
   Object.entries(params).forEach(([key, val]) => {
-    if (val != null) requestUrl.searchParams.append(key, String(val));
+    if (val != null) url.searchParams.append(key, String(val));
   });
 
-  const res = await authFetch(requestUrl.toString());
+  const res = await authFetch(url.toString());
   const json = await handleResponse(res);
   return {
     events: json.data.events,
@@ -46,7 +45,9 @@ export const fetchEvents = async (params = {}) => {
 };
 
 /**
- * Fetch single event details
+ * Fetch single event details by ID
+ * @param {number|string} eventId
+ * @returns {Promise<Object>} Event details
  */
 export const fetchEventDetails = async (eventId) => {
   const res = await authFetch(`${BASE_URL}/events/${eventId}`);
@@ -57,7 +58,7 @@ export const fetchEventDetails = async (eventId) => {
 /**
  * Create a new event
  * @param {Object} eventData
- * @returns {Promise<Object>} Created event
+ * @returns {Promise<Object>} Created event data
  */
 export const createEvent = async (eventData) => {
   const res = await authFetch(`${BASE_URL}/events`, {
@@ -70,10 +71,10 @@ export const createEvent = async (eventData) => {
 };
 
 /**
- * Update existing event
- * @param {number} eventId
+ * Update an existing event
+ * @param {number|string} eventId
  * @param {Object} updatedData
- * @returns {Promise<Object>} Updated event
+ * @returns {Promise<Object>} Updated event data
  */
 export const updateEvent = async (eventId, updatedData) => {
   const res = await authFetch(`${BASE_URL}/events/${eventId}`, {
@@ -86,8 +87,8 @@ export const updateEvent = async (eventId, updatedData) => {
 };
 
 /**
- * Delete an event
- * @param {number} eventId
+ * Delete an event by ID
+ * @param {number|string} eventId
  * @returns {Promise<string>} Success message
  */
 export const deleteEvent = async (eventId) => {
@@ -97,5 +98,3 @@ export const deleteEvent = async (eventId) => {
   const json = await handleResponse(res);
   return json.message || 'Event deleted successfully';
 };
-
-

@@ -1,155 +1,3 @@
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
-import { fetchEvents } from '@/api/aevents.js'
-
-const router = useRouter()
-
-// Searching, status filtering and sorting status
-const searchQuery = ref('')
-const statusFilter = ref('all')
-const sortBy = ref('date')
-const sortOrder = ref('desc')
-
-// Used to store event data as well as load and error states
-const eventsData = ref([])
-const loading = ref(false)
-const error = ref(null)
-
-// Call API to get event data when mounting
-onMounted(async () => {
-  loading.value = true
-  try {
-    // Call fetchEvents and the returned data structure is { events, pagination }
-    const response = await fetchEvents()
-    // Here it is assumed that each event returned by the backend has a startDateTime field (ISO string)
-    eventsData.value = response.events
-  } catch (err) {
-    error.value = 'Failed to load events data. Please try again later.'
-    console.error("Failed to fetch events data:", err)
-  } finally {
-    loading.value = false
-  }
-})
-
-// Calculate a filtered list of events based on search, status filter and sort fields
-const filteredEvents = computed(() => {
-  return eventsData.value
-    .filter(event => {
-      // State filtering: if the selected state is not "all", only events with matching state are returned
-      if (statusFilter.value !== 'all' && event.status !== statusFilter.value) {
-        return false
-      }
-      // Search filtering: differentiated matching of event names, locations and organisers
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
-        // If organizer is an object, splice firstName and lastName.
-        const organizer = typeof event.organizer === 'string'
-          ? event.organizer
-          : `${event.organizer.firstName} ${event.organizer.lastName}`
-        return (
-          event.name.toLowerCase().includes(query) ||
-          event.location.toLowerCase().includes(query) ||
-          organizer.toLowerCase().includes(query)
-        )
-      }
-      return true
-    })
-    .sort((a, b) => {
-      let comparison = 0
-      if (sortBy.value === 'name') {
-        comparison = a.name.localeCompare(b.name)
-      } else if (sortBy.value === 'date') {
-        // Comparison using the startDateTime field
-        comparison = new Date(a.startDateTime) - new Date(b.startDateTime)
-      } else if (sortBy.value === 'tickets') {
-        comparison = a.ticketsSold - b.ticketsSold
-      } else if (sortBy.value === 'revenue') {
-        comparison =
-          parseFloat(a.revenue.replace('$', '').replace(',', '')) -
-          parseFloat(b.revenue.replace('$', '').replace(',', ''))
-      }
-      return sortOrder.value === 'asc' ? comparison : -comparison
-    })
-})
-
-// Toggle Sort Order
-const toggleSortOrder = () => {
-  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-}
-
-// Page Jump Method
-const viewEventDetails = (eventId) => {
-  router.push(`/admin/events/${eventId}`)
-}
-
-const createNewEvent = () => {
-  router.push('/admin/events/create')
-}
-
-const editEvent = (eventId) => {
-  router.push(`/admin/events/edit/${eventId}`)
-}
-
-const deleteEvent = async (eventId) => {
-  if (confirm('Are you sure you want to delete this event?')) {
-    try {
-      // Call the API to delete the event (if the deleteEvent method is provided in the API module)
-      await deleteEvent(eventId)
-      // Update local data after successful deletion
-      eventsData.value = eventsData.value.filter(event => event.id !== eventId)
-    } catch (err) {
-      console.error("Failed to delete event:", err)
-      alert('Failed to delete event. Please try again later.')
-    }
-  }
-}
-
-// Formatted date (en-AU)
-// Add a judgement on the validity of the date string to ensure it is displayed correctly
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const dateObj = new Date(dateString)
-  if (isNaN(dateObj)) return ''
-  return dateObj.toLocaleDateString('en-AU', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
-}
-
-// Formatting time (en-AU)
-// Add a judgement on the validity of the date string to ensure it is displayed correctly
-const formatTime = (dateString) => {
-  if (!dateString) return ''
-  const dateObj = new Date(dateString)
-  if (isNaN(dateObj)) return ''
-  return dateObj.toLocaleTimeString('en-AU', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-// Returns the CSS class name according to the event status
-const getStatusClass = (status) => {
-  switch (status) {
-    case 'Active':
-      return 'bg-light text-success'
-    case 'Upcoming':
-      return 'bg-light text-primary'
-    case 'Completed':
-      return 'bg-light text-dark'
-    case 'Cancelled':
-      return 'bg-light text-danger'
-    case 'PUBLISHED':
-      return 'bg-light text-primary'
-    default:
-      return 'bg-light text-dark'
-  }
-}
-</script>
-
 <template>
   <AdminLayout>
     <div class="p-4">
@@ -233,8 +81,8 @@ const getStatusClass = (status) => {
                 <td class="px-3 py-2">
                   <div class="fw-medium text-dark">{{ event.name }}</div>
                   <div class="fs-6 text-muted">
-                    {{ typeof event.organizer === 'string' 
-                        ? event.organizer 
+                    {{ typeof event.organizer === 'string'
+                        ? event.organizer
                         : event.organizer.firstName + ' ' + event.organizer.lastName }}
                   </div>
                 </td>
@@ -299,6 +147,152 @@ const getStatusClass = (status) => {
     </div>
   </AdminLayout>
 </template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AdminLayout from '@/layouts/AdminLayout.vue'
+import { fetchEvents, deleteEvent as deleteEventApi } from '@/api/aevents.js'
+
+// Router
+const router = useRouter()
+
+// Searching, status filtering and sorting status
+const searchQuery = ref('')
+const statusFilter = ref('all')
+const sortBy = ref('date')
+const sortOrder = ref('desc')
+
+// Used to store event data as well as load and error states
+const eventsData = ref([])
+const loading = ref(false)
+const error = ref(null)
+
+// Call API to get event data when mounting
+onMounted(async () => {
+  loading.value = true
+  try {
+    const response = await fetchEvents()
+    eventsData.value = response.events
+  } catch (err) {
+    error.value = 'Failed to load events data. Please try again later.'
+    console.error("Failed to fetch events data:", err)
+  } finally {
+    loading.value = false
+  }
+})
+
+// Calculate a filtered list of events based on search, status filter and sort fields
+const filteredEvents = computed(() => {
+  return eventsData.value
+    .filter(event => {
+      if (statusFilter.value !== 'all' && event.status !== statusFilter.value) {
+        return false
+      }
+      if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase()
+        const organizer = typeof event.organizer === 'string'
+          ? event.organizer
+          : `${event.organizer.firstName} ${event.organizer.lastName}`
+        return (
+          event.name.toLowerCase().includes(query) ||
+          event.location.toLowerCase().includes(query) ||
+          organizer.toLowerCase().includes(query)
+        )
+      }
+      return true
+    })
+    .sort((a, b) => {
+      let comparison = 0
+      if (sortBy.value === 'name') {
+        comparison = a.name.localeCompare(b.name)
+      } else if (sortBy.value === 'date') {
+        comparison = new Date(a.startDateTime) - new Date(b.startDateTime)
+      } else if (sortBy.value === 'tickets') {
+        comparison = a.ticketsSold - b.ticketsSold
+      } else if (sortBy.value === 'revenue') {
+        comparison =
+          parseFloat(a.revenue.replace(/[^0-9.-]+/g, '')) -
+          parseFloat(b.revenue.replace(/[^0-9.-]+/g, ''))
+      }
+      return sortOrder.value === 'asc' ? comparison : -comparison
+    })
+})
+
+// Toggle Sort Order
+const toggleSortOrder = () => {
+  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+}
+
+// Page Jump Method
+const viewEventDetails = (eventId) => {
+  router.push(`/admin/events/${eventId}`)
+}
+
+const createNewEvent = () => {
+  router.push('/admin/events/create')
+}
+
+const editEvent = (eventId) => {
+  router.push(`/admin/events/edit/${eventId}`)
+}
+
+// Only modified deleteEvent section
+const deleteEvent = async (eventId) => {
+  if (!window.confirm('Are you sure you want to delete this event?')) {
+    return
+  }
+  try {
+    const msg = await deleteEventApi(eventId)
+    eventsData.value = eventsData.value.filter(event => event.id !== eventId)
+    alert(msg)
+  } catch (err) {
+    console.error('Failed to delete event:', err)
+    alert('Failed to delete event. Please try again later.')
+  }
+}
+
+// Formatted date (en-AU)
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const dateObj = new Date(dateString)
+  if (isNaN(dateObj)) return ''
+  return dateObj.toLocaleDateString('en-AU', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+// Formatting time (en-AU)
+const formatTime = (dateString) => {
+  if (!dateString) return ''
+  const dateObj = new Date(dateString)
+  if (isNaN(dateObj)) return ''
+  return dateObj.toLocaleTimeString('en-AU', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// Returns the CSS class name according to the event status
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'Active':
+      return 'bg-light text-success'
+    case 'Upcoming':
+      return 'bg-light text-primary'
+    case 'Completed':
+      return 'bg-light text-dark'
+    case 'Cancelled':
+      return 'bg-light text-danger'
+    case 'PUBLISHED':
+      return 'bg-light text-primary'
+    default:
+      return 'bg-light text-dark'
+  }
+}
+</script>
 
 <style scoped>
 ul { margin: 0; padding-left: 1rem; }

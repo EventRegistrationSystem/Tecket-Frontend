@@ -9,32 +9,35 @@ import { useUserStore } from '@/store/user.js';
 export async function authFetch(input, init = {}) {
   const userStore = useUserStore();
 
-  // Merge headers, always JSON + Bearer token
+  // Merge headers: JSON + Bearer token
   init.headers = {
     'Content-Type': 'application/json',
     ...(init.headers || {}),
-    'Authorization': `Bearer ${userStore.accessToken}`
+    'Authorization': `Bearer ${userStore.accessToken}`,
   };
-  // If you need to bring Cookie, also add:
-  //  init.credentials = 'include';
 
-  let res = await fetch(input, init);
+  // If cookies are needed:
+  // init.credentials = 'include';
 
-  // if (res.status === 401) {
-  //   try {
-  //     const newToken = await refreshAccessToken();
-  //     userStore.setAccessToken(newToken);
+  // First attempt
+  let response = await fetch(input, init);
 
-  //     // Retry original request with new token
-  //     init.headers['Authorization'] = `Bearer ${newToken}`;
-  //     res = await fetch(input, init);
-  //   } catch (err) {
+  // If Unauthorized, try refresh once
+  if (response.status === 401) {
+    try {
+      const newToken = await refreshAccessToken();
+      userStore.setAccessToken(newToken);
 
-  //     userStore.clearAccessToken();
-  //     window.location.href = '/signIn';
-  //     throw err;
-  //   }
-  // }
+      // Retry original request with new token
+      init.headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(input, init);
+    } catch (err) {
+      // Refresh failed: clear tokens and redirect to login
+      userStore.clearAccessToken();
+      window.location.href = '/signIn';
+      throw err;
+    }
+  }
 
-  return res;
+  return response;
 }
