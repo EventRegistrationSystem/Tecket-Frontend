@@ -47,7 +47,7 @@ export const fetchEventDetails = async (eventId) => {
  * @returns {Promise<Object>} Created event
  */
 export const createEvent = async (eventData) => {
-  const res = await authFetch(`${API_URL}/events`, {
+  const res = await authFetch(`${BASE_URL}/events`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(eventData)
@@ -63,7 +63,7 @@ export const createEvent = async (eventData) => {
  * @returns {Promise<Object>} Updated event
  */
 export const updateEvent = async (eventId, updatedData) => {
-  const res = await authFetch(`${API_URL }/events/${eventId}`, {
+  const res = await authFetch(`${BASE_URL}/events/${eventId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updatedData)
@@ -78,7 +78,7 @@ export const updateEvent = async (eventId, updatedData) => {
  * @returns {Promise<string>} Success message
  */
 export const deleteEvent = async (eventId) => {
-  const res = await authFetch(`${API_URL }/events/${eventId}`, {
+  const res = await authFetch(`${BASE_URL}/events/${eventId}`, {
     method: 'DELETE'
   });
   const json = await handleResponse(res);
