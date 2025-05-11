@@ -234,7 +234,7 @@ const userStore = useUserStore();
 onMounted(async () => {
   try {
     const token = userStore.accessToken || localStorage.getItem("accessToken");
-    const res = await fetch("http://localhost:3000/api/events", {
+    const res = await fetch(import.meta.env.VITE_API_BASE_URL + "/events", {
       headers: token
         ? {
             "Authorization": `Bearer ${token}`,
