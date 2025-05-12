@@ -2,7 +2,7 @@
 <template>
   <nav class="navbar --bs-warning-bg-subtle">
     <div class="container-fluid">
-      <!-- 品牌 LOGO -->
+
       <router-link to="/" class="navbar-brand d-flex align-items-center">
         <img
           src="@/assets/logo.png"
@@ -15,7 +15,6 @@
         <span class="text-dark fw-bold ms-2" id="brandName">Teket</span>
       </router-link>
 
-      <!-- 未登录 状态 -->
       <ul v-if="!isAuthenticated" class="nav justify-content-end">
         <li class="nav-item">
           <router-link to="/events" class="nav-link d-flex align-items-center" style="font-family: 'Font'">
@@ -41,7 +40,6 @@
         </li>
       </ul>
 
-      <!-- 已登录 状态 -->
       <ul v-else class="nav justify-content-end align-items-center position-relative">
         <li class="nav-item">
           <router-link to="/events" class="nav-link d-flex align-items-center" style="font-family: 'Font'">
@@ -56,7 +54,6 @@
           </router-link>
         </li>
 
-        <!-- 用户头像及下拉 -->
         <div class="d-flex align-items-center ms-4" style="cursor: pointer" @click="toggleUserMenu">
           <img
             src="https://i.pravatar.cc/36"
@@ -70,7 +67,6 @@
           <i class="pi pi-angle-down ms-2 fs-6"></i>
         </div>
 
-        <!-- 下拉菜单 -->
         <div
           v-if="isUserMenuOpen"
           class="position-absolute end-0 bg-dark shadow-lg rounded py-2"
@@ -98,31 +94,31 @@ import { fetchUserProfile } from '@/api/users.js';
 const router = useRouter();
 const userStore = useUserStore();
 
-// 登录状态
+
 const isAuthenticated = computed(() => userStore.isAuthenticated);
 
-// 当前用户信息
+
 const userData = ref(null);
 
-// 下拉菜单开关
+
 const isUserMenuOpen = ref(false);
 function toggleUserMenu() {
   isUserMenuOpen.value = !isUserMenuOpen.value;
 }
 
-// 组件挂载后，如果已登录则拉取用户信息
+// After the component is mounted, pull user information if logged in
 onMounted(async () => {
   if (isAuthenticated.value) {
     try {
       const data = await fetchUserProfile();
       userData.value = data;
     } catch (err) {
-      console.error('获取用户信息失败：', err);
+      console.error('Failed to get user information:', err);
     }
   }
 });
 
-// 导航到个人页或管理后台
+// Navigate to your personal page or admin panel
 function goToProfile() {
   if (!userData.value) return;
   if (userData.value.role === 'ADMIN') {
@@ -132,7 +128,7 @@ function goToProfile() {
   }
 }
 
-// 退出登录，清除 store 并跳转登录
+// Log out, clear store and jump to login
 function logOut() {
   userStore.clearAccessToken();
   userStore.clearCurrentUser();
