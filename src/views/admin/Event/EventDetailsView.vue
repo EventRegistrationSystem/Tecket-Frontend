@@ -51,10 +51,10 @@ onMounted(async () => {
       isFree: false       
     }
 
-    // Getting a list of ticket types (using the atickets interface)
-    ticketTypes.value = await fetchTicketTypes(eventId)
-    // Getting participant data (here, an empty array is returned for the time being, which can be extended as needed)
-    attendees.value = await fetchAttendees(eventId)
+    // // Getting a list of ticket types 
+    // ticketTypes.value = await fetchTicketTypes(eventId)
+    // // Getting participant data 
+    // attendees.value = await fetchAttendees(eventId)
   } catch (error) {
     console.error("Error fetching event data:", error)
     // Setting the default data in case of error to prevent the page from reporting errors

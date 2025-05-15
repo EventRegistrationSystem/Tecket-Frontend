@@ -7,7 +7,6 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import { fetchEventDetails, createEvent, updateEvent } from '@/api/eventServices.js'
 import { fetchTicketTypes, createTicketType, updateTicketType } from '@/api/atickets.js'
 
-
 const route = useRoute()
 const router = useRouter()
 
@@ -99,7 +98,7 @@ onMounted(async () => {
         }
       }
       // Get the ticket type data, get the current event ticket type list through API interface
-      ticketTypes.value = await fetchTicketTypes(eventId)
+      // ticketTypes.value = await fetchTicketTypes(eventId)
     } catch (err) {
       console.error('Error fetching event data:', err)
       // Setting default data to avoid page errors when exceptions occur
