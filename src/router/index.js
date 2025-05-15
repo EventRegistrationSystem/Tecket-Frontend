@@ -11,8 +11,7 @@ import Questionnaire from "@/views/questionare/Questionnaire.vue";
 import Review from "@/views/questionare/Review.vue";
 import Checkout from "@/views/questionare/Checkout.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
-import HomeView from "@/views/HomeView.vue";
-import LoginView from "@/views/auth/LoginView.vue";
+// import LoginView from "@/views/auth/LoginView.vue";
 import registerEvent from "@/views/registerEvent.vue";
 const routes = [
   { path: "/", component: Home },
@@ -49,12 +48,6 @@ const routes = [
     path: "/checkout",
     name: "Checkout",
     component: Checkout,
-  },
-  { path: "/admin/home", name: "home", component: HomeView },
-  {
-    path: "/login",
-    name: "login",
-    component: LoginView,
   },
   {
     path: "/admin",
@@ -144,18 +137,6 @@ const routes = [
     component: () =>
       import("@/views/admin/Questionnaire/ViewQuestionnaire.vue"),
   },
-  /*
-  {
-    path: "/admin/reports",
-    name: "reports",
-    component: () => import("@/views/admin/ReportsView.vue")
-  },
-  {
-    path: "/admin/settings",
-    name: "settings",
-    component: () => import("@/views/admin/SettingsView.vue")
-  }
-  */
   { path: "/user/profile", component: UserProfileView },
 
   {
