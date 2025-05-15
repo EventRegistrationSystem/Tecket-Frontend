@@ -6,10 +6,11 @@ import userEventView from "@/views/user/userEventView.vue";
 import Events from "@/views/event/EventListView.vue";
 import SignIn from "@/views/auth/SignInView.vue";
 import SignUp from "@/views/auth/SignUpView.vue";
-import TicketSelection from "@/views/questionare/TicketSelectionFormView.vue";
-import Questionnaire from "@/views/questionare/QuestionnaireFormView.vue";
-import Review from "@/views/questionare/ReviewFormView.vue";
-import Checkout from "@/views/questionare/CheckoutView.vue";
+
+import TicketSelection from "@/views/registration/TicketSelectionFormView.vue";
+import Questionnaire from "@/views/registration/QuestionnaireFormView.vue";
+import Review from "@/views/registration/ReviewFormView.vue";
+import Checkout from "@/views/registration/CheckoutView.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
 const routes = [
   { path: "/", component: HomeView },
@@ -35,7 +36,7 @@ const routes = [
   {
     path: "/personalInfo",
     name: "PersonalInfo",
-    component: () => import("@/views/questionare/PersonalInfoFormView.vue"),
+    component: () => import("@/views/registration/PersonalInfoFormView.vue"),
   },
   {
     path: "/complete-form/questionnaire",

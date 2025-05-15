@@ -48,7 +48,7 @@
             </div>
           </div>
           <div class="align-item-center mt-5">
-            <router-link to="/select-category">
+            <router-link to="/ticket-selection">
               <button class="btn btn-outline-warning fw-semibold">
                 Register now
               </button>
