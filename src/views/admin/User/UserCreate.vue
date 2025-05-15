@@ -28,6 +28,7 @@ const cancelCreate = () => {
 
 <script>
 import { createUser } from "@/api/users";
+import router from "@/router";
 
 export default {
   data() {
@@ -51,13 +52,12 @@ export default {
         password: this.password,
         role: this.role,
       };
-
       const message = await createUser(userData);
       if (message == "Successful") {
         router.push("/admin/users");
       } else {
         // Display ERROR
-        window.alert('Error');
+        window.alert("Error");
       }
     },
   },

@@ -114,7 +114,7 @@ export const createUser = async (userData) => {
           "Content-Type": "application/json",
         }
       : { "Content-Type": "application/json" },
-    body: JSON.stringify(userData)
+    body: JSON.stringify(userData),
   })
     .then((response) => {
       return response.json();
@@ -130,3 +130,34 @@ export const createUser = async (userData) => {
   return "Successful";
 };
 
+/**
+ * Get user by Id
+ * @param {Number} userId
+ * @returns {Promise<Object>} userData
+ */
+export const getUserById = async (userId) => {
+  const url = import.meta.env.VITE_API_BASE_URL + `/user/${userId}`;
+  const token = localStorage.getItem("accessToken");
+  var userData = null;
+  await fetch(url, {
+    method: "GET",
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        }
+      : { "Content-Type": "application/json" },
+  })
+    .then((response) => {
+      return response.json();
+    })
+    .then((responseData) => {
+      userData = responseData.data;
+    })
+    .catch((error) => {
+      console.error("Error delete user profile:", error);
+      throw error;
+    });
+
+  return userData;
+};

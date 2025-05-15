@@ -72,11 +72,11 @@
           class="position-absolute end-0 bg-dark shadow-lg rounded py-2"
           style="top: 3rem; width: 12rem; z-index: 10"
         >
-          <a @click="goToProfile" class="d-flex align-items-center px-4 py-2 text-white text-decoration-none">
+          <a style="cursor: pointer;" @click="goToProfile" class="d-flex align-items-center px-4 py-2 text-white text-decoration-none">
             <i class="pi pi-user me-2"></i> Profile
           </a>
           <div class="border-top border-secondary my-1"></div>
-          <a @click="logOut" class="d-flex align-items-center px-4 py-2 text-white text-decoration-none">
+          <a style="cursor: pointer;" @click="logOut" class="d-flex align-items-center px-4 py-2 text-white text-decoration-none">
             <i class="pi pi-power-off me-2"></i> Logout
           </a>
         </div>
