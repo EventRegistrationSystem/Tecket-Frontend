@@ -23,7 +23,6 @@ onMounted(async () => {
   // Fetch user profile by ID
   user.value = await getUserById(userId);
   loading = true;
-  console.log(user);
 
   if (user) {
     loadingContainer.style.display = "none";

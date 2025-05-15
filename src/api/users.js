@@ -123,7 +123,7 @@ export const createUser = async (userData) => {
       message = responseData.data;
     })
     .catch((error) => {
-      console.error("Error delete user profile:", error);
+      console.error("Error create user profile:", error);
       throw error;
     });
 
@@ -155,9 +155,43 @@ export const getUserById = async (userId) => {
       userData = responseData.data;
     })
     .catch((error) => {
-      console.error("Error delete user profile:", error);
+      console.error("Error get user profile:", error);
       throw error;
     });
 
   return userData;
+};
+
+/**
+ * Update a user
+ * @param {Number} userId
+ * @param {Object} userData
+ * @returns {Promise<String>} Message
+ */
+export const updateUser = async (userId,userData) => {
+  const url = import.meta.env.VITE_API_BASE_URL + `/user/${userId}`;
+  const token = localStorage.getItem("accessToken");
+  var message = null;
+  await fetch(url, {
+    method: "PUT",
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        }
+      : { "Content-Type": "application/json" },
+    body: JSON.stringify(userData),
+  })
+    .then((response) => {
+      return response.json();
+    })
+    .then((responseData) => {
+      message = responseData.data;
+    })
+    .catch((error) => {
+      console.error("Error update user profile:", error);
+      throw error;
+    });
+    
+  return "Successful";
 };

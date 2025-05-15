@@ -131,7 +131,7 @@ function goToProfile() {
 // Log out, clear store and jump to login
 function logOut() {
   userStore.clearAccessToken();
-  userStore.clearCurrentUser();
+  userStore.clearRole();
   userStore.clearRefreshToken?.();
   router.push('/signIn');
 }

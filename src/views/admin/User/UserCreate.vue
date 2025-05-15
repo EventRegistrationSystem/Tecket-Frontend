@@ -6,21 +6,6 @@ import { usersMockData } from "@/mock/usersMock.js";
 
 const router = useRouter();
 
-// 保存新用户（直接修改模拟数据）
-// createUser(async () => {
-//   const userData = {
-//     email: this.email,
-//     password: this.password,
-//     firstName: this.firstName,
-//     lastName: this.lastName,
-//     phoneNo: this.phoneNo,
-//   };
-//   console.log("userData: ");
-//   await createUser(userData);
-
-//   router.push("/admin/users");
-// });
-
 const cancelCreate = () => {
   router.push("/admin/users");
 };
