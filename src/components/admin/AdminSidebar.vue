@@ -20,8 +20,6 @@ const activeItem = computed(() => {
   if (currentPath.startsWith("/admin/events")) return "events";
   else if (currentPath.startsWith("/admin/users")) return "users";
   else if (currentPath.startsWith("/admin/tickets")) return "tickets";
-  else if (currentPath.startsWith("/admin/reports")) return "reports";
-  else if (currentPath.startsWith("/admin/settings")) return "settings";
   else if (currentPath.startsWith("/admin/questionnaire"))
     return "questionnaire";
   return "dashboard";
@@ -44,22 +42,10 @@ const menuItems = [
     route: "/admin/tickets",
   },
   {
-    id: "reports",
-    label: "Reports",
-    icon: "pi pi-chart-bar",
-    route: "/admin/reports",
-  },
-  {
     id: "questionnaire",
     label: "Questionnaire",
     icon: "pi pi-question-circle",
     route: "/admin/questionnaire",
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: "pi pi-cog",
-    route: "/admin/settings",
   },
 ];
 

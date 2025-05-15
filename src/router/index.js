@@ -3,13 +3,13 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "@/views/HomeView.vue";
 import UserManagementView from "@/views/user/userManagementView.vue";
 import userEventView from "@/views/user/userEventView.vue";
-import Events from "@/views/event/events.vue";
+import Events from "@/views/event/EventListView.vue";
 import SignIn from "@/views/auth/SignInView.vue";
 import SignUp from "@/views/auth/SignUpView.vue";
 import TicketSelection from "@/views/questionare/TicketSelectionFormView.vue";
 import Questionnaire from "@/views/questionare/QuestionnaireFormView.vue";
 import Review from "@/views/questionare/ReviewFormView.vue";
-import Checkout from "@/views/questionare/Checkout.vue";
+import Checkout from "@/views/questionare/CheckoutView.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
 const routes = [
   { path: "/", component: HomeView },
@@ -19,7 +19,7 @@ const routes = [
   {
     path: "/eventDetail/:id",
     name: "EventDetail",
-    component: () => import("@/views/event/eventDetail.vue"),
+    component: () => import("@/views/event/EventDetailsView.vue"),
   },
   {
     path: "/ticket-selection",
