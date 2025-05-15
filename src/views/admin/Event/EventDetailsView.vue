@@ -1,4 +1,3 @@
-<!-- src/views/admin/EventDetailsView.vue -->
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

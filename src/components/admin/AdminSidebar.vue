@@ -1,4 +1,3 @@
-<!-- src/components/Sidebar.vue -->
 <script setup>
 import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -20,8 +19,6 @@ const activeItem = computed(() => {
   if (currentPath.startsWith("/admin/events")) return "events";
   else if (currentPath.startsWith("/admin/users")) return "users";
   else if (currentPath.startsWith("/admin/tickets")) return "tickets";
-  else if (currentPath.startsWith("/admin/questionnaire"))
-    return "questionnaire";
   return "dashboard";
 });
 
@@ -40,12 +37,6 @@ const menuItems = [
     label: "Tickets",
     icon: "pi pi-ticket",
     route: "/admin/tickets",
-  },
-  {
-    id: "questionnaire",
-    label: "Questionnaire",
-    icon: "pi pi-question-circle",
-    route: "/admin/questionnaire",
   },
 ];
 
