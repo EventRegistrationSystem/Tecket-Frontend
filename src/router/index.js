@@ -11,7 +11,6 @@ import Questionnaire from "@/views/questionare/Questionnaire.vue";
 import Review from "@/views/questionare/Review.vue";
 import Checkout from "@/views/questionare/Checkout.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
-// import LoginView from "@/views/auth/LoginView.vue";
 import registerEvent from "@/views/registerEvent.vue";
 const routes = [
   { path: "/", component: Home },
