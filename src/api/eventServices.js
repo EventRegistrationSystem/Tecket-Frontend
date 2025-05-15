@@ -1,6 +1,5 @@
-// src/api/aevents.js
 import { authFetch } from './authRefresh.js';
-import { BASE_URL } from './auth.js';
+import { BASE_URL } from './authServices.js';
 
 /**
  * Helper: Parse JSON and throw errors uniformly

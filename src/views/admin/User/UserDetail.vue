@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminLayout from "@/layouts/AdminLayout.vue";
-import { getUserById } from "@/api/users";
+import { getUserById } from "@/api/userServices";
 
 const route = useRoute();
 const router = useRouter();

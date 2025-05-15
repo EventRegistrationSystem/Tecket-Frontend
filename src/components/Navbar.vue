@@ -89,7 +89,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/store/user';
-import { fetchUserProfile } from '@/api/users.js';
+import { fetchUserProfile } from '@/api/userServices.js';
 
 const router = useRouter();
 const userStore = useUserStore();

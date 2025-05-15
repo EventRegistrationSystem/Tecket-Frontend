@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 
 // Introducing interface methods from the API layer, based on code implementations you provide
-import { fetchEventDetails } from '@/api/aevents.js'
+import { fetchEventDetails } from '@/api/eventServices.js'
 import { fetchTicketTypes } from '@/api/atickets.js'
 // Note: fetchAttendees is not provided in the API part of the code, so this simulates returning an empty array;
 // If you need real data, implement the corresponding interface under /src/api/.
