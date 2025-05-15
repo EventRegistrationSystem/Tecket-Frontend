@@ -6,9 +6,9 @@ import userEventView from "@/views/user/userEventView.vue";
 import Events from "@/views/event/events.vue";
 import SignIn from "@/views/auth/SignInView.vue";
 import SignUp from "@/views/auth/SignUpView.vue";
-import SelectCategory from "@/views/questionare/SelectCategory.vue";
-import Questionnaire from "@/views/questionare/Questionnaire.vue";
-import Review from "@/views/questionare/Review.vue";
+import TicketSelection from "@/views/questionare/TicketSelectionFormView.vue";
+import Questionnaire from "@/views/questionare/QuestionnaireFormView.vue";
+import Review from "@/views/questionare/ReviewFormView.vue";
 import Checkout from "@/views/questionare/Checkout.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
 const routes = [
@@ -22,14 +22,14 @@ const routes = [
     component: () => import("@/views/event/eventDetail.vue"),
   },
   {
-    path: "/select-category",
-    name: "SelectCategory",
-    component: SelectCategory,
+    path: "/ticket-selection",
+    name: "TicketSelection",
+    component: TicketSelection,
   },
   {
     path: "/personalInfo",
     name: "PersonalInfo",
-    component: () => import("@/views/questionare/PersonalInfo.vue"),
+    component: () => import("@/views/questionare/PersonalInfoFormView.vue"),
   },
   {
     path: "/complete-form/questionnaire",
