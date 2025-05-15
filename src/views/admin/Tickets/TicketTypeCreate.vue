@@ -50,7 +50,7 @@ const saveTicket = async () => {
       status: ticketForm.value.status
     }
     await createTicketType(eventId, payload)
-    router.push(`/admin/tickets/${eventId}`)
+    router.push({ name: 'TicketTypeCreate', params: {eventId} })
   } catch (err) {
     console.error('Create ticket failed:', err)
   } finally {

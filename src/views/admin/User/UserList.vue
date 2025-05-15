@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { usersMockData } from '@/mock/usersMock.js'
-import { fetchAllUsersData } from '@/api/users'
+import { fetchAllUsersData,deleteUserbyID } from '@/api/users'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -78,7 +78,8 @@ const editUser = (userId) => {
 const deleteUser = (userId) => {
   if (confirm('Are you sure you want to delete this user?')) {
     usersData.value = usersData.value.filter(user => user.id !== userId)
-    deleteUser(userId);
+    deleteUserbyID(userId);
+    console.log('DONE');
   }
 }
 

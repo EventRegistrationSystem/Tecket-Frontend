@@ -1,32 +1,35 @@
 // src/api/aevents.js
 import { authFetch } from './authRefresh.js';
-
-const API_BASE_URL = 'http://localhost:3000/api';
+import { BASE_URL } from './auth.js';
 
 /**
  * Helper: Parse JSON and throw errors uniformly
  * @param {Response} res
- * @returns {Promise<Object>} json
+ * @returns {Promise<Object>} json data or empty object
  */
 const handleResponse = async (res) => {
-  const json = await res.json();
+  const contentType = res.headers.get('content-type') || '';
+
   if (!res.ok) {
-    throw new Error(json.message || json.error || `Request failed with status ${res.status}`);
+    const errorText = contentType.includes('application/json')
+      ? (await res.json()).message
+      : await res.text();
+    throw new Error(errorText || `Request failed with status ${res.status}`);
   }
-  return json;
+
+  if (contentType.includes('application/json')) {
+    return await res.json();
+  }
+  return {};
 };
 
-// ==========================
-// Event-related APIs
-// ==========================
-
 /**
- * Fetch events with pagination info
- * @param {Object} params - page, limit, search, eventType, location, isFree, startDate, endDate, myEvents, status
- * @returns {Promise<{ events: Array, pagination: Object }>}
+ * Fetch paginated list of events
+ * @param {Object} params - Query parameters (page, limit, filters)
+ * @returns {Promise<{ events: Array, pagination: Object }>} 
  */
 export const fetchEvents = async (params = {}) => {
-  const url = new URL(`${API_BASE_URL}/events`);
+  const url = new URL(`${BASE_URL}/events`);
   Object.entries(params).forEach(([key, val]) => {
     if (val != null) url.searchParams.append(key, String(val));
   });
@@ -40,12 +43,12 @@ export const fetchEvents = async (params = {}) => {
 };
 
 /**
- * Fetch single event details
- * @param {number} eventId
- * @returns {Promise<Object>} Event object
+ * Fetch single event details by ID
+ * @param {number|string} eventId
+ * @returns {Promise<Object>} Event details
  */
 export const fetchEventDetails = async (eventId) => {
-  const res = await authFetch(`${API_BASE_URL}/events/${eventId}`);
+  const res = await authFetch(`${BASE_URL}/events/${eventId}`);
   const json = await handleResponse(res);
   return json.data;
 };
@@ -53,10 +56,10 @@ export const fetchEventDetails = async (eventId) => {
 /**
  * Create a new event
  * @param {Object} eventData
- * @returns {Promise<Object>} Created event
+ * @returns {Promise<Object>} Created event data
  */
 export const createEvent = async (eventData) => {
-  const res = await authFetch(`${API_BASE_URL}/events`, {
+  const res = await authFetch(`${BASE_URL}/events`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(eventData)
@@ -66,13 +69,13 @@ export const createEvent = async (eventData) => {
 };
 
 /**
- * Update existing event
- * @param {number} eventId
+ * Update an existing event
+ * @param {number|string} eventId
  * @param {Object} updatedData
- * @returns {Promise<Object>} Updated event
+ * @returns {Promise<Object>} Updated event data
  */
 export const updateEvent = async (eventId, updatedData) => {
-  const res = await authFetch(`${API_BASE_URL}/events/${eventId}`, {
+  const res = await authFetch(`${BASE_URL}/events/${eventId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updatedData)
@@ -82,16 +85,14 @@ export const updateEvent = async (eventId, updatedData) => {
 };
 
 /**
- * Delete an event
- * @param {number} eventId
+ * Delete an event by ID
+ * @param {number|string} eventId
  * @returns {Promise<string>} Success message
  */
 export const deleteEvent = async (eventId) => {
-  const res = await authFetch(`${API_BASE_URL}/events/${eventId}`, {
+  const res = await authFetch(`${BASE_URL}/events/${eventId}`, {
     method: 'DELETE'
   });
   const json = await handleResponse(res);
   return json.message || 'Event deleted successfully';
 };
-
-

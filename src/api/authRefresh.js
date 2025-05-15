@@ -1,39 +1,43 @@
-// src/api/authFetch.js
+// src/api/authRefresh.js
+import { refreshAccessToken } from './auth.js';
+import { useUserStore } from '@/store/user.js';
 
-import { refreshAccessToken } from './auth.js'
-import { useUserStore } from '@/store/user.js'
-
+/**
+ * Wrapper around fetch that adds Authorization header,
+ * attempts refresh on 401, and retries once.
+ */
 export async function authFetch(input, init = {}) {
-  const userStore = useUserStore()
+  const userStore = useUserStore();
 
-  //Add the latest accessToken to each request
+  // Merge headers: JSON + Bearer token
   init.headers = {
     'Content-Type': 'application/json',
     ...(init.headers || {}),
-    'Authorization': `Bearer ${userStore.accessToken}`
-  }
-  // If you need to bring Cookie, also add:
-  // init.credentials = 'include'
+    'Authorization': `Bearer ${userStore.accessToken}`,
+  };
 
-  let res = await fetch(input, init)
+  // If cookies are needed:
+  // init.credentials = 'include';
 
-  // If the accessToken expires and results in a 401 error, try refreshing
-  if (res.status === 401) {
-    try {
-      const newToken = await refreshAccessToken()
-      // Update to User.Store and localStorage
-      userStore.setAccessToken(newToken)
+  // First attempt
+  let response = await fetch(input, init);
 
-      // Retry the original request with a new token
-      init.headers['Authorization'] = `Bearer ${newToken}`
-      res = await fetch(input, init)
-    } catch (err) {
-      // Refresh also failed, force logout
-      userStore.clearAccessToken()
-      window.location.href = '/signIn'
-      throw err
-    }
-  }
+  // // If Unauthorized, try refresh once
+  // if (response.status === 401) {
+  //   try {
+  //     const newToken = await refreshAccessToken();
+  //     userStore.setAccessToken(newToken);
 
-  return res
+  //     // Retry original request with new token
+  //     init.headers['Authorization'] = `Bearer ${newToken}`;
+  //     response = await fetch(input, init);
+  //   } catch (err) {
+  //     // Refresh failed: clear tokens and redirect to login
+  //     userStore.clearAccessToken();
+  //     window.location.href = '/signIn';
+  //     throw err;
+  //   }
+  // }
+
+  return response;
 }
