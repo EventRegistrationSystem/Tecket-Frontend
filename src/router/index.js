@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-import Home from "@/views/home.vue";
+import HomeView from "@/views/HomeView.vue";
 import UserManagementView from "@/views/user/userManagementView.vue";
 import userEventView from "@/views/user/userEventView.vue";
 import Events from "@/views/event/events.vue";
@@ -13,7 +13,7 @@ import Checkout from "@/views/questionare/Checkout.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
 import registerEvent from "@/views/registerEvent.vue";
 const routes = [
-  { path: "/", component: Home },
+  { path: "/", component: HomeView },
   { path: "/events", component: Events },
   { path: "/signIn", component: SignIn },
   { path: "/signUp", component: SignUp },

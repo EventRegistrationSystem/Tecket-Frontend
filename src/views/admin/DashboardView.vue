@@ -4,7 +4,6 @@ import { ref, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { eventsMockData } from '@/mock/eventsMock.js'
 import { usersMockData } from '@/mock/usersMock.js'
-// 从单独的文件引入统计数据
 import { dashboardStatsMockData } from '@/mock/dashboardStatsMock.js'
 
 // 统计卡数据，直接使用引入的 mock 数据

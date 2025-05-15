@@ -170,8 +170,8 @@
 </template>
 
 <script>
-import navbar from "@/components/navbar.vue";
-import Footer from "@/components/footer.vue";
+import navbar from "@/components/Navbar.vue";
+import Footer from "@/components/Footer.vue";
 
 export default {
   components: {
