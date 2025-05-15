@@ -4,14 +4,13 @@ import HomeView from "@/views/HomeView.vue";
 import UserManagementView from "@/views/user/userManagementView.vue";
 import userEventView from "@/views/user/userEventView.vue";
 import Events from "@/views/event/events.vue";
-import SignIn from "@/views/auth/signIn.vue";
-import SignUp from "@/views/auth/signUp.vue";
+import SignIn from "@/views/auth/SignInView.vue";
+import SignUp from "@/views/auth/SignUpView.vue";
 import SelectCategory from "@/views/questionare/SelectCategory.vue";
 import Questionnaire from "@/views/questionare/Questionnaire.vue";
 import Review from "@/views/questionare/Review.vue";
 import Checkout from "@/views/questionare/Checkout.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
-import registerEvent from "@/views/registerEvent.vue";
 const routes = [
   { path: "/", component: HomeView },
   { path: "/events", component: Events },
@@ -22,7 +21,6 @@ const routes = [
     name: "EventDetail",
     component: () => import("@/views/event/eventDetail.vue"),
   },
-  { path: "/registerEvent", component: registerEvent },
   {
     path: "/select-category",
     name: "SelectCategory",
@@ -56,7 +54,7 @@ const routes = [
   {
     path: "/admin/events",
     name: "events",
-    component: () => import("../views/admin/Event/EventsList.vue"),
+    component: () => import("../views/admin/Event/EventsListView.vue"),
   },
   {
     path: "/admin/events/create",

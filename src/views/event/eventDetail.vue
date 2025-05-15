@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import navbar from '@/components/navbar.vue'
+import navbar from '@/components/Navbar.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
