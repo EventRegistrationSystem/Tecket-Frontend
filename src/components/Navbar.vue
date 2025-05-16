@@ -62,7 +62,7 @@
             style="width: 2rem; height: 2rem"
           />
           <span class="text-dark d-none d-md-inline">
-            {{ userData?.firstName || '' }} {{ userData?.lastName || '' }}
+            {{ currentUser?.firstName || '' }} {{ currentUser?.lastName || '' }}
           </span>
           <i class="pi pi-angle-down ms-2 fs-6"></i>
         </div>
@@ -86,54 +86,79 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useUserStore } from '@/store/user';
+import { useUserStore } from '@/store/userStore';
 import { fetchUserProfile } from '@/api/userServices.js';
+import { logoutUser } from '@/api/authServices.js'; 
 
 const router = useRouter();
 const userStore = useUserStore();
 
-
 const isAuthenticated = computed(() => userStore.isAuthenticated);
-
-
-const userData = ref(null);
-
+const currentUser = computed(() => userStore.currentUser);
 
 const isUserMenuOpen = ref(false);
 function toggleUserMenu() {
   isUserMenuOpen.value = !isUserMenuOpen.value;
 }
 
-// After the component is mounted, pull user information if logged in
-onMounted(async () => {
-  if (isAuthenticated.value) {
+// Fetch user profile when component mounts or when authentication status changes to true
+// and user data isn't already in the store.
+const loadUserProfile = async () => {
+  if (isAuthenticated.value && !currentUser.value) { // Only fetch if authenticated and no user data
     try {
-      const data = await fetchUserProfile();
-      userData.value = data;
+      // Assuming fetchUserProfile gets the current logged-in user's profile
+      // And that your userStore might be populated by login/register already.
+      // This fetch might be redundant if login/register already populates userStore.user fully.
+      // However, it's good for cases where the app loads and user is already authenticated (token in localStorage).
+      const userProfileData = await fetchUserProfile(); // This should ideally get the current user's profile
+      if (userProfileData) {
+        userStore.setUser(userProfileData); // Ensure store has a setUser action
+      }
     } catch (err) {
-      console.error('Failed to get user information:', err);
+      console.error('Failed to fetch user information on mount:', err);
+      // Potentially handle token expiry here if fetchUserProfile fails due to 401
+      // though httpClient interceptor should handle refresh. If refresh also fails, it redirects.
     }
+  }
+};
+
+onMounted(loadUserProfile);
+
+// Watch for changes in authentication state to re-fetch profile if user logs in
+// without a full page reload, and user data is not yet set.
+watch(isAuthenticated, (newAuthStatus) => {
+  if (newAuthStatus && !currentUser.value) {
+    loadUserProfile();
   }
 });
 
+
 // Navigate to your personal page or admin panel
 function goToProfile() {
-  if (!userData.value) return;
-  if (userData.value.role === 'ADMIN') {
-    router.push('/admin');
+  if (!currentUser.value) return; // Use currentUser from store
+  // Assuming role is part of the user object in the store
+  if (currentUser.value.role === 'ADMIN' || currentUser.value.role === 'ORGANIZER') { // Example: ORGANIZER also goes to admin
+    router.push('/admin'); // Or a specific admin dashboard route
   } else {
     router.push('/user/profile');
   }
+  isUserMenuOpen.value = false; // Close menu after navigation
 }
 
 // Log out, clear store and jump to login
-function logOut() {
-  userStore.clearAccessToken();
-  userStore.clearRole();
-  userStore.clearRefreshToken?.();
-  router.push('/signIn');
+async function logOut() {
+  try {
+    await logoutUser(); // Call the API service
+  } catch (error) {
+    console.error('Logout API call failed:', error);
+    // Even if API call fails, proceed to clear client-side session
+  } finally {
+    userStore.clearUserSession(); // Use the comprehensive clear action
+    isUserMenuOpen.value = false; // Close menu
+    router.push('/signIn'); // Redirect to login
+  }
 }
 </script>
 
