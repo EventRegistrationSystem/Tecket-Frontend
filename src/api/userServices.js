@@ -1,197 +1,119 @@
-// ==========================
-// User-related API methods
-// ==========================
-import { useUserStore } from "@/store/user";
+import httpClient from './httpClient';
+
+// Note: The useUserStore import is not needed here as httpClient handles token injection.
 
 /**
- * Fetch user profile data using TOKEN
+ * Fetch the current authenticated user's profile data.
+ * The httpClient will automatically add the Authorization token.
+ * Assuming the backend endpoint for the current user's profile is /users/profile (or similar like /auth/me)
  * @returns {Promise<Object>} User Profile object
  */
 export const fetchUserProfile = async () => {
   try {
-    const userStore = useUserStore();
-    const token = userStore.accessToken || localStorage.getItem("accessToken");
-    const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL + `/user/profile`,
-      {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            }
-          : { "Content-Type": "application/json" },
-      }
-    );
-    if (!response.ok) {
-      throw new Error(`Request failed with status: ${response.status}`);
-    }
-    const json = await response.json();
-    return json.data;
+    // Adjust endpoint if necessary, e.g., '/auth/me' or '/users/profile'
+    const response = await httpClient.get('/users/profile'); 
+    // Assuming backend response is { success: true, data: { ...userProfile } }
+    return response.data.data;
   } catch (error) {
-    console.error("Error fetching user profile:", error);
-    throw error;
+    console.error('Error fetching user profile:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
   }
 };
 
 /**
- * Fetch all users data
+ * Fetch all users data (Admin operation).
  * @returns {Promise<Array>} Array of users
  */
-export const fetchAllUsersData = async () => {
-  const url = import.meta.env.VITE_API_BASE_URL + "/user/users";
-  const token = localStorage.getItem("accessToken");
-  var usersData = null;
-  await fetch(url, {
-    method: "GET",
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        }
-      : { "Content-Type": "application/json" },
-  })
-    .then((response) => {
-      return response.json();
-    })
-    .then((responseData) => {
-      usersData = responseData.data;
-    })
-    .catch((error) => {
-      console.error("Error fetching user profile:", error);
-      throw error;
-    });
-
-  return usersData;
+export const fetchAllUsers = async () => { // Renamed for clarity
+  try {
+    const response = await httpClient.get('/users'); // Assuming endpoint is /users for admin
+    // Assuming backend response is { success: true, data: { users: [], pagination: {} } } or just { success: true, data: [] }
+    return response.data.data.users || response.data.data; 
+  } catch (error) {
+    console.error('Error fetching all users:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
- * Delete a user
- * @param {Number} userId
- * @returns {Promise<String>} Message
+ * Delete a user by ID (Admin operation).
+ * @param {number|string} userId
+ * @returns {Promise<Object>} Response data, typically a success message.
  */
-export const deleteUserbyID = async (userId) => {
-  const url = import.meta.env.VITE_API_BASE_URL + `/user/${userId}`;
-  const token = localStorage.getItem("accessToken");
-  var message = null;
-  await fetch(url, {
-    method: "DELETE",
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        }
-      : { "Content-Type": "application/json" },
-  })
-    .then((response) => {
-      return response.json();
-    })
-    .then((responseData) => {
-      message = responseData.data;
-    })
-    .catch((error) => {
-      console.error("Error delete user profile:", error);
-      throw error;
-    });
-
-  return message;
+export const deleteUserById = async (userId) => {
+  try {
+    const response = await httpClient.delete(`/users/${userId}`); // Assuming endpoint is /users/:id for admin
+    return response.data; // Assuming backend returns { success: true, message: '...' }
+  } catch (error) {
+    console.error(`Error deleting user ID ${userId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
- * Create a user
- * @param {Object} userData
- * @returns {Promise<String>} Message
+ * Create a new user (Admin operation).
+ * @param {Object} userData - Data for the new user.
+ * @returns {Promise<Object>} The created user data.
  */
 export const createUser = async (userData) => {
-  const url = import.meta.env.VITE_API_BASE_URL + `/user`;
-  // console.log('userData', userData)
-  const token = localStorage.getItem("accessToken");
-  var message = null;
-  await fetch(url, {
-    method: "POST",
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        }
-      : { "Content-Type": "application/json" },
-    body: JSON.stringify(userData),
-  })
-    .then((response) => {
-      return response.json();
-    })
-    .then((responseData) => {
-      message = responseData.data;
-    })
-    .catch((error) => {
-      console.error("Error create user profile:", error);
-      throw error;
-    });
-
-  return "Successful";
+  try {
+    const response = await httpClient.post('/users', userData); // Assuming endpoint is /users for admin
+    // Assuming backend response is { success: true, data: { ...createdUser } }
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating user:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
- * Get user by Id
- * @param {Number} userId
- * @returns {Promise<Object>} userData
+ * Get a specific user by ID (Admin operation).
+ * @param {number|string} userId
+ * @returns {Promise<Object>} User data.
  */
-export const getUserById = async (userId) => {
-  const url = import.meta.env.VITE_API_BASE_URL + `/user/${userId}`;
-  const token = localStorage.getItem("accessToken");
-  var userData = null;
-  await fetch(url, {
-    method: "GET",
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        }
-      : { "Content-Type": "application/json" },
-  })
-    .then((response) => {
-      return response.json();
-    })
-    .then((responseData) => {
-      userData = responseData.data;
-    })
-    .catch((error) => {
-      console.error("Error get user profile:", error);
-      throw error;
-    });
-
-  return userData;
+export const fetchUserById = async (userId) => { // Renamed for clarity
+  try {
+    const response = await httpClient.get(`/users/${userId}`); // Assuming endpoint is /users/:id for admin
+    // Assuming backend response is { success: true, data: { ...userData } }
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error fetching user ID ${userId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
- * Update a user
- * @param {Number} userId
- * @param {Object} userData
- * @returns {Promise<String>} Message
+ * Update a user by ID (Admin operation or self-update).
+ * @param {number|string} userId - ID of the user to update.
+ * @param {Object} userData - Data to update.
+ * @returns {Promise<Object>} The updated user data.
  */
-export const updateUser = async (userId,userData) => {
-  const url = import.meta.env.VITE_API_BASE_URL + `/user/${userId}`;
-  const token = localStorage.getItem("accessToken");
-  var message = null;
-  await fetch(url, {
-    method: "PUT",
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        }
-      : { "Content-Type": "application/json" },
-    body: JSON.stringify(userData),
-  })
-    .then((response) => {
-      return response.json();
-    })
-    .then((responseData) => {
-      message = responseData.data;
-    })
-    .catch((error) => {
-      console.error("Error update user profile:", error);
-      throw error;
-    });
-    
-  return "Successful";
+export const updateUser = async (userId, userData) => {
+  try {
+    // If this can also be a self-update, the endpoint might be /users/profile or /users/me
+    // If it's strictly admin, /users/:userId is fine.
+    const response = await httpClient.put(`/users/${userId}`, userData); 
+    // Assuming backend response is { success: true, data: { ...updatedUser } }
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating user ID ${userId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Update the current authenticated user's own profile.
+ * @param {Object} profileData - Data to update for the current user's profile.
+ * @returns {Promise<Object>} The updated user profile data.
+ */
+export const updateUserProfile = async (profileData) => {
+  try {
+    // Common endpoint for self-update is often /users/profile or /auth/profile
+    const response = await httpClient.put('/users/profile', profileData); 
+    // Assuming backend response is { success: true, data: { ...updatedUserProfile } }
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating own user profile:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
