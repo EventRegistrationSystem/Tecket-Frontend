@@ -104,7 +104,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTicketStore } from '@/store/ticketStore'
 import StepIndicator from '@/components/StepIndicator.vue'
-import navbar from '@/components/navbar.vue'
+import navbar from '@/components/Navbar.vue'
 
 const router = useRouter()
 const ticketStore = useTicketStore()

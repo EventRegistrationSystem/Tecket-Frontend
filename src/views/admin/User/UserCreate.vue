@@ -12,7 +12,7 @@ const cancelCreate = () => {
 </script>
 
 <script>
-import { createUser } from "@/api/users";
+import { createUser } from "@/api/userServices";
 import router from "@/router";
 
 export default {

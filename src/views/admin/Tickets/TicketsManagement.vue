@@ -4,7 +4,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 
-import { fetchEventDetails } from '@/api/aevents.js'
+import { fetchEventDetails } from '@/api/eventServices.js'
 import { fetchTicketTypes, deleteTicketType } from '@/api/atickets.js'
 import { usersMockData } from '@/mock/usersMock.js'
 import { participantsMockData } from '@/mock/participantsMockData.js'

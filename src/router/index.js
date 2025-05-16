@@ -1,37 +1,45 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-import Home from "@/views/home.vue";
+import HomeView from "@/views/HomeView.vue";
 import UserManagementView from "@/views/user/userManagementView.vue";
 import userEventView from "@/views/user/userEventView.vue";
-import Events from "@/views/event/events.vue";
-import SignIn from "@/views/auth/signIn.vue";
-import SignUp from "@/views/auth/signUp.vue";
-import SelectCategory from "@/views/questionare/SelectCategory.vue";
-import Questionnaire from "@/views/questionare/Questionnaire.vue";
-import Review from "@/views/questionare/Review.vue";
-import Checkout from "@/views/questionare/Checkout.vue";
+import EventListView from "@/views/event/EventListView.vue";
+import SignIn from "@/views/auth/SignInView.vue";
+import SignUp from "@/views/auth/SignUpView.vue";
+
+import TicketSelection from "@/views/registration/TicketSelectionFormView.vue";
+import Questionnaire from "@/views/registration/QuestionnaireFormView.vue";
+import Review from "@/views/registration/ReviewFormView.vue";
+import Checkout from "@/views/registration/CheckoutView.vue";
 import UserProfileView from "@/views/user/UserProfileView.vue";
-import registerEvent from "@/views/registerEvent.vue";
 const routes = [
-  { path: "/", component: Home },
-  { path: "/events", component: Events },
+  { path: "/", component: HomeView },
+
+  // Authentication views
   { path: "/signIn", component: SignIn },
   { path: "/signUp", component: SignUp },
+  
+  // Public event routes
+  { 
+    path: "/events", 
+    component: EventListView 
+  },
   {
     path: "/eventDetail/:id",
     name: "EventDetail",
-    component: () => import("@/views/event/eventDetail.vue"),
+    component: () => import("@/views/event/EventDetailsView.vue"),
   },
-  { path: "/registerEvent", component: registerEvent },
+
+  // Registraiton routes
   {
-    path: "/select-category",
-    name: "SelectCategory",
-    component: SelectCategory,
+    path: "/ticket-selection",
+    name: "TicketSelection",
+    component: TicketSelection,
   },
   {
     path: "/personalInfo",
     name: "PersonalInfo",
-    component: () => import("@/views/questionare/PersonalInfo.vue"),
+    component: () => import("@/views/registration/PersonalInfoFormView.vue"),
   },
   {
     path: "/complete-form/questionnaire",
@@ -48,15 +56,21 @@ const routes = [
     name: "Checkout",
     component: Checkout,
   },
+
+  // Admin routes
+
+  // -- Dashboard --
   {
     path: "/admin",
     name: "dashboard",
     component: () => import("../views/admin/DashboardView.vue"),
   },
+
+  // -- Event Management --
   {
     path: "/admin/events",
     name: "events",
-    component: () => import("../views/admin/Event/EventsList.vue"),
+    component: () => import("../views/admin/Event/EventsListView.vue"),
   },
   {
     path: "/admin/events/create",
@@ -73,6 +87,8 @@ const routes = [
     name: "event-edit",
     component: () => import("../views/admin/Event/EventFormView.vue"),
   },
+
+  // -- User Management Routes--
   {
     path: "/admin/users",
     name: "users",
@@ -93,6 +109,8 @@ const routes = [
     name: "UserEdit",
     component: () => import("@/views/admin/User/UserEdit.vue"),
   },
+
+  // -- Ticket Management Routes -- (Consider removing)
   {
     path: "/admin/tickets",
     name: "TicketsView",
@@ -124,6 +142,8 @@ const routes = [
     name: "TicketEdit",
     component: () => import("@/views/admin/Tickets/TicketTypeEdit.vue"),
   },
+
+  // -- Questionnaire Management Routes -- (Consider removing)
   {
     path: "/admin/Questionnaire",
     name: "QuestionnaireList",
@@ -136,6 +156,8 @@ const routes = [
     component: () =>
       import("@/views/admin/Questionnaire/ViewQuestionnaire.vue"),
   },
+
+  // -- User Management Routes --
   { path: "/user/profile", component: UserProfileView },
 
   {

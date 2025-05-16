@@ -4,27 +4,21 @@ import { ref, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { eventsMockData } from '@/mock/eventsMock.js'
 import { usersMockData } from '@/mock/usersMock.js'
-// 从单独的文件引入统计数据
 import { dashboardStatsMockData } from '@/mock/dashboardStatsMock.js'
 
-// 统计卡数据，直接使用引入的 mock 数据
 const statsData = ref([...dashboardStatsMockData])
-
-// 使用 eventsMockData 中的数据，取前 5 个
 const recentEvents = ref(eventsMockData.slice(0, 5))
 
-// 使用 usersMockData 中的数据，取前 5 个并转换字段格式
 const recentUsers = ref(
   usersMockData.slice(0, 5).map(user => ({
     id: user.id,
     name: user.first_name + ' ' + user.last_name,
     email: user.email,
     registeredDate: user.created_at,
-    eventsAttended: 0   // 此字段未在 mock 数据中提供，默认设置为 0
+    eventsAttended: 0   
   }))
 )
 
-// 图表数据
 const salesChartData = ref(null)
 const salesChartOptions = ref({
   responsive: true,

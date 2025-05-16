@@ -48,7 +48,7 @@
             </div>
           </div>
           <div class="align-item-center mt-5">
-            <router-link to="/select-category">
+            <router-link to="/ticket-selection">
               <button class="btn btn-outline-warning fw-semibold">
                 Register now
               </button>
@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import navbar from '@/components/navbar.vue'
+import navbar from '@/components/Navbar.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'

@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { usersMockData } from '@/mock/usersMock.js'
-import { fetchAllUsersData,deleteUserbyID } from '@/api/users'
+import { fetchAllUsersData,deleteUserbyID } from '@/api/userServices'
 
 const router = useRouter()
 const searchQuery = ref('')
