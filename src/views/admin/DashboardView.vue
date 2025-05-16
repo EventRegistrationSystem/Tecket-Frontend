@@ -212,44 +212,67 @@ const formatDate = (dateString) => {
         </div>
       </div>
       
-      <!-- Quick Actions Row -->
-      <div class="bg-white rounded shadow-sm p-3">
-        <h2 class="fs-5 fw-semibold text-dark mb-3">Quick Actions</h2>
-        <div class="row g-4">
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle mb-2">
-                <i class="pi pi-calendar-plus fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">Create Event</p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle mb-2">
-                <i class="pi pi-user-plus fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">Add User</p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle mb-2">
-                <i class="pi pi-ticket fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">Manage Tickets</p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle mb-2">
-                <i class="pi pi-chart-line fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">View Reports</p>
-            </div>
-          </div>
+<!-- Quick Actions Row -->
+<div class="bg-white rounded shadow-sm p-3">
+  <h2 class="fs-5 fw-semibold text-dark mb-3">Quick Actions</h2>
+  <div class="row g-4">
+    <!-- Create Event -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <router-link
+        :to="{ name: 'event-create' }"
+        class="d-flex flex-column align-items-center justify-content-center p-3 border rounded text-decoration-none"
+        style="cursor: pointer;"
+      >
+        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle mb-2">
+          <i class="pi pi-calendar-plus fs-4"></i>
         </div>
+        <p class="text-dark fw-normal">Create Event</p>
+      </router-link>
+    </div>
+
+    <!-- Add User -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <router-link
+        :to="{ name: 'UserCreate' }"
+        class="d-flex flex-column align-items-center justify-content-center p-3 border rounded text-decoration-none"
+        style="cursor: pointer;"
+      >
+        <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle mb-2">
+          <i class="pi pi-user-plus fs-4"></i>
+        </div>
+        <p class="text-dark fw-normal">Add User</p>
+      </router-link>
+    </div>
+
+    <!-- Manage Tickets -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <router-link
+        :to="{ name: 'TicketsView' }"
+        class="d-flex flex-column align-items-center justify-content-center p-3 border rounded text-decoration-none"
+        style="cursor: pointer;"
+      >
+        <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle mb-2">
+          <i class="pi pi-ticket fs-4"></i>
+        </div>
+        <p class="text-dark fw-normal">Manage Tickets</p>
+      </router-link>
+    </div>
+
+    <!-- View Reports (no route) -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <div
+        class="d-flex flex-column align-items-center justify-content-center p-3 border rounded"
+        style="cursor: default;"
+      >
+        <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle mb-2">
+          <i class="pi pi-chart-line fs-4"></i>
+        </div>
+        <p class="text-dark fw-normal">View Reports</p>
       </div>
+    </div>
+  </div>
+</div>
+
     </div>
 
     <div style="background-color: #f0f0f0; padding: 20px; display: flex;">
