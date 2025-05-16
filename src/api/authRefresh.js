@@ -1,5 +1,5 @@
 import { refreshAccessToken } from './authServices.js';
-import { useUserStore } from '@/store/user.js';
+import { useUserStore } from '@/store/userStore.js';
 
 /**
  * Wrapper around fetch that adds Authorization header,

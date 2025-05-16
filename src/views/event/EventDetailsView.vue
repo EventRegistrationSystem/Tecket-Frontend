@@ -71,7 +71,7 @@
 import navbar from '@/components/Navbar.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useUserStore } from '@/store/user'
+import { useUserStore } from '@/store/userStore'
 
 const route = useRoute()
 const eventId = route.params.id
