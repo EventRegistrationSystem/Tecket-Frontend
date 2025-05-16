@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "@/views/HomeView.vue";
 import UserManagementView from "@/views/user/userManagementView.vue";
 import userEventView from "@/views/user/userEventView.vue";
-import Events from "@/views/event/EventListView.vue";
+import EventListView from "@/views/event/EventListView.vue";
 import SignIn from "@/views/auth/SignInView.vue";
 import SignUp from "@/views/auth/SignUpView.vue";
 
@@ -16,11 +16,14 @@ const routes = [
   { path: "/", component: HomeView },
 
   // Authentication views
-  { path: "/events", component: Events },
   { path: "/signIn", component: SignIn },
   { path: "/signUp", component: SignUp },
   
   // Public event routes
+  { 
+    path: "/events", 
+    component: EventListView 
+  },
   {
     path: "/eventDetail/:id",
     name: "EventDetail",
