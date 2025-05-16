@@ -5,29 +5,28 @@ import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { usersMockData } from '@/mock/usersMock.js'
 
-// 获取路由参数 id，并转换成数字 11
+// Get the route parameter id and convert it into the number 11
 const route = useRoute()
 const router = useRouter()
 const userId = parseInt(route.params.id)
 
-// 定义用户详情数据和加载状态
+// Define user details data and loading status
 const userDetail = ref(null)
 const loading = ref(true)
 
-// 页面加载后，从 usersMockData 中查找对应的用户数据
+// After the page is loaded, find the corresponding user data from usersMockData
 onMounted(() => {
-  // 这里简单查找 usersMockData 中 id 与 userId 匹配的用户
+  // Here we simply search for users whose id matches userId in usersMockData
   const foundUser = usersMockData.find(user => user.id === userId)
   if(foundUser) {
-    // 示例转换：将 first_name 和 last_name 合并显示，并添加一些假设的字段
+    // Example transformation: combine first_name and last_name for display and add some hypothetical fields
     userDetail.value = {
       id: foundUser.id,
       name: `${foundUser.first_name} ${foundUser.last_name}`,
       email: foundUser.email,
-      ticketType: 'VIP', // 示例数据，可根据实际情况修改
+      ticketType: 'VIP', // Sample data, can be modified according to actual situation
       purchaseDate: foundUser.created_at || '2025-01-10T10:00:00Z',
       phone_no: foundUser.phone_no || 'N/A'
-      // 可以根据需要添加更多字段
     }
   } else {
     userDetail.value = {
@@ -41,7 +40,7 @@ onMounted(() => {
   loading.value = false
 })
 
-// 日期格式化函数
+// Date formatting function
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -50,7 +49,7 @@ const formatDate = (dateString) => {
   })
 }
 
-// 返回上一页
+// Return to the previous page
 const goBack = () => {
   router.back()
 }
@@ -59,14 +58,14 @@ const goBack = () => {
 <template>
   <AdminLayout>
     <div class="p-4">
-      <!-- 加载状态 -->
+      <!-- Loading status -->
       <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height: 16rem;">
         <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
       
-      <!-- 用户详情内容 -->
+      <!-- User details -->
       <div v-else>
         <button @click="goBack" class="btn btn-link text-primary mb-3">
           <i class="pi pi-arrow-left"></i>
@@ -81,7 +80,7 @@ const goBack = () => {
             <p><strong>Ticket Type:</strong> {{ userDetail.ticketType }}</p>
             <p><strong>Purchase Date:</strong> {{ formatDate(userDetail.purchaseDate) }}</p>
             <p v-if="userDetail.phone_no"><strong>Phone:</strong> {{ userDetail.phone_no }}</p>
-            <!-- 可根据需求添加更多字段 -->
+            <!-- More fields can be added as needed -->
           </div>
         </div>
       </div>
