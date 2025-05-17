@@ -3,9 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 
-// Importing events and ticket related interfaces from the API layer (both internally using authFetch for authorisation transfer)
+// Importing API services
 import { fetchEventDetails, createEvent, updateEvent } from '@/api/eventServices.js'
-import { fetchTicketTypes, createTicketType, updateTicketType } from '@/api/atickets.js'
+import { fetchTicketsForEvent, createTicketForEvent, updateTicketForEvent, deleteTicketForEvent } from '@/api/ticketServices.js'
+import { fetchEventQuestions, createEventQuestion, updateEventQuestion, deleteEventQuestion } from '@/api/questionServices.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,10 +36,11 @@ const eventForm = ref({
   state: '',
   zipCode: '',
   organizer: '',
-  organizerContact: '',
   capacity: 100,
-  status: 'Upcoming',
+  status: 'PUBLISHED',
   imageUrl: '',
+  eventType: '',
+  isFree: false,
 })
 
 // Ticket data (taken from interface when editing, default empty array when creating)
@@ -68,6 +70,35 @@ const parseTime = (dateTimeString) => {
   return `${hours}:${minutes}`
 }
 
+// Helper function to combine date and time strings into ISO 8601 format
+const combineDateAndTime = (dateString, timeString) => {
+  if (!dateString || typeof dateString !== 'string' || !dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    console.error('Invalid or empty dateString provided to combineDateAndTime:', dateString);
+    return null;
+  }
+
+  let timePart = '00:00:00';
+  if (timeString && typeof timeString === 'string') {
+    if (timeString.match(/^\d{2}:\d{2}$/)) {
+      timePart = `${timeString}:00`;
+    } else if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      timePart = timeString;
+    }
+  }
+
+  const isoString = `${dateString}T${timePart}.000Z`;
+
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) {
+    console.error('Invalid date or time for ISO conversion:', isoString);
+    return null;
+  }
+  return date.toISOString();
+};
+
+const originalTicketTypes = ref([]);
+const originalQuestions = ref([]);
+
 onMounted(async () => {
   if (isEditMode.value) {
     try {
@@ -88,39 +119,51 @@ onMounted(async () => {
           city: eventData.city || '',
           state: eventData.state || '',
           zipCode: eventData.zipCode || '',
-          organizer: typeof eventData.organizer === 'string'
-            ? eventData.organizer
-            : (eventData.organizer.firstName + ' ' + eventData.organizer.lastName),
-          organizerContact: eventData.organizerContact || '',
+          organizer: typeof eventData.organizer === 'object' && eventData.organizer !== null ? `${eventData.organizer.firstName} ${eventData.organizer.lastName}` : eventData.organizer || '',
+          
           capacity: eventData.capacity || 100,
-          status: eventData.status || 'Upcoming',
-          imageUrl: eventData.imageUrl || 'https://placehold.co/600x400/eee/ccc?text=Event+Image',
-        }
+          // status: eventData.status || 'Upcoming',
+          // imageUrl: eventData.imageUrl || 'https://placehold.co/600x400/eee/ccc?text=Event+Image',
+          eventType: eventData.eventType || '',
+          isFree: eventData.isFree || false,
+        };
+
+        const fetchedTickets = await fetchTicketsForEvent(eventId);
+        ticketTypes.value = fetchedTickets.map(t => ({
+          id: t.id,
+          name: t.name || '',
+          price: t.price !== undefined ? Number(t.price) : 0,
+          quantity: t.quantityTotal || 0,
+          description: t.description || '',
+          salesStart: t.salesStart ? parseDate(t.salesStart) : '',
+          salesEnd: t.salesEnd ? parseDate(t.salesEnd) : '',
+        }));
+        originalTicketTypes.value = JSON.parse(JSON.stringify(ticketTypes.value));
+
+        const fetchedQuestions = await fetchEventQuestions(eventId);
+        questions.value = fetchedQuestions.map(q => ({
+          id: q.id,
+          text: q.question.questionText || '',
+          type: q.question.questionType || 'text',
+          required: q.isRequired || false,
+          options: q.question.options ? (typeof q.question.options === 'string' ? JSON.parse(q.question.options) : q.question.options) : ['Option 1'],
+          hasMaxLength: q.question.validationRules?.maxLength !== undefined,
+          maxLength: q.question.validationRules?.maxLength || 255,
+          order: q.displayOrder !== undefined ? q.displayOrder : 0,
+          category: q.question.category || '',
+          backendQuestionId: q.questionId,
+          backendEventQuestionId: q.id,
+        }));
+        originalQuestions.value = JSON.parse(JSON.stringify(questions.value));
       }
-      // Get the ticket type data, get the current event ticket type list through API interface
-      // ticketTypes.value = await fetchTicketTypes(eventId)
     } catch (err) {
-      console.error('Error fetching event data:', err)
-      // Setting default data to avoid page errors when exceptions occur
-      eventForm.value = {
-        name: '',
-        description: '',
-        startDate: '',
-        endDate: '',
-        startTime: '',
-        endTime: '',
-        location: '',
-        address: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        organizer: '',
-        organizerContact: '',
-        capacity: 100,
-        status: 'Upcoming',
-        imageUrl: '',
-      }
-      ticketTypes.value = []
+      console.error('Error fetching event data:', err);
+      Object.assign(eventForm.value, {
+        name: '', description: '', startDate: '', endDate: '', startTime: '', endTime: '',
+        location: '', address: '', city: '', state: '', zipCode: '', organizer: '', capacity: 100, status: 'Upcoming', eventType: '', isFree: false,
+      });
+      ticketTypes.value = [];
+      questions.value = [];
     } finally {
       loading.value = false
     }
@@ -133,35 +176,66 @@ onMounted(async () => {
 // Verify that the form inputs are correct
 const validateForm = () => {
   errors.value = {}
-  if (!eventForm.value.name) {
-    errors.value.name = 'Event name is required'
+  if (!eventForm.value.name) errors.value.name = 'Event name is required';
+  if (!eventForm.value.startDate) errors.value.startDate = 'Event start date is required';
+  if (!eventForm.value.endDate) errors.value.endDate = 'Event end date is required';
+  if (eventForm.value.startDate && new Date(eventForm.value.startDate) < new Date()) {
+    errors.value.startDate = 'Event start date must be in the future';
   }
-  if (!eventForm.value.startDate) {
-    errors.value.startDate = 'Event start date is required'
+  if (eventForm.value.startDate && eventForm.value.endDate && new Date(eventForm.value.endDate) < new Date(eventForm.value.startDate)) {
+    errors.value.endDate = 'End date must be after start date';
   }
-  if (!eventForm.value.endDate) {
-    errors.value.endDate = 'Event end date is required'
+  if (!eventForm.value.location) errors.value.location = 'Location is required';
+  if (!eventForm.value.capacity || eventForm.value.capacity <= 0) errors.value.capacity = 'Valid capacity is required';
+  if (!eventForm.value.eventType) errors.value.eventType = 'Event type is required';
+
+  if (eventForm.value.isFree === false && ticketTypes.value.length === 0) {
+    errors.value.tickets = 'At least one ticket type is required for paid events.';
   }
-  if (!eventForm.value.location) {
-    errors.value.location = 'Location is required'
+  if (eventForm.value.isFree === false) {
+    ticketTypes.value.forEach((ticket, index) => {
+      if (!ticket.name) errors.value[`ticket_${index}_name`] = `Ticket ${index + 1} name is required.`;
+      if (ticket.price === undefined || ticket.price < 0) errors.value[`ticket_${index}_price`] = `Ticket ${index + 1} price is invalid.`;
+      if (ticket.quantity === undefined || ticket.quantity <= 0) errors.value[`ticket_${index}_quantity`] = `Ticket ${index + 1} quantity is invalid.`;
+
+      if (!ticket.salesStart) {
+        errors.value[`ticket_${index}_salesStart`] = `Ticket ${index + 1} sales start date is required.`;
+      } else if (!ticket.salesStart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        errors.value[`ticket_${index}_salesStart`] = `Ticket ${index + 1} sales start date must be a valid date (YYYY-MM-DD).`;
+      }
+
+      if (!ticket.salesEnd) {
+        errors.value[`ticket_${index}_salesEnd`] = `Ticket ${index + 1} sales end date is required.`;
+      } else if (!ticket.salesEnd.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        errors.value[`ticket_${index}_salesEnd`] = `Ticket ${index + 1} sales end date must be a valid date (YYYY-MM-DD).`;
+      }
+
+      if (ticket.salesStart && ticket.salesEnd && ticket.salesStart.match(/^\d{4}-\d{2}-\d{2}$/) && ticket.salesEnd.match(/^\d{4}-\d{2}-\d{2}$/) && new Date(ticket.salesEnd) < new Date(ticket.salesStart)) {
+        errors.value[`ticket_${index}_salesEnd`] = `Ticket ${index + 1} sales end date must be after sales start date.`;
+      }
+    });
   }
-  if (!eventForm.value.capacity || eventForm.value.capacity <= 0) {
-    errors.value.capacity = 'Valid capacity is required'
+
+  if (questions.value.length === 0) {
+    errors.value.questions = 'At least one question is required.';
+  } else {
+    questions.value.forEach((q, index) => {
+      if (!q.text.trim()) errors.value[`question_${index}_text`] = `Question ${index + 1} text is required.`;
+    });
   }
-  if (ticketTypes.value.length === 0) {
-    errors.value.tickets = 'At least one ticket type is required'
-  }
-  return Object.keys(errors.value).length === 0
+
+  return Object.keys(errors.value).length === 0;
 }
 
 const addTicketType = () => {
-  // Temporary ID is used by default when adding a ticket (the backend will return the official ID on subsequent saves)
   ticketTypes.value.push({
-    id: Date.now(), // Temporary IDs use the current timestamp
+    id: Date.now(),
     name: '',
     price: 0.0,
-    quantity: 0, // Corresponds to the API field quantity_total
+    quantity: 1, // Corresponds to the API field quantityTotal
     description: '',
+    salesStart: '',
+    salesEnd: '',
   })
 }
 
@@ -172,48 +246,72 @@ const removeTicketType = (index) => {
 // Save events: APIs are called according to the editing or creation mode respectively
 const saveEvent = async () => {
   if (!validateForm()) {
-    return
-  }
-  saving.value = true
-  try {
-    if (isEditMode.value) {
-      // Edit mode: call updateEvent to update the event details.
-      await updateEvent(eventId, eventForm.value)
-      // Processing ticket data: iterating through each ticket type
-      for (const ticket of ticketTypes.value) {
-        // Assume that existing tickets (ID returned by the API is numeric) need to be updated, otherwise they are considered new tickets
-        if (typeof ticket.id === 'number' && ticket.id < 10000000000) {
-          // Updated ticket type data
-          await updateTicketType(eventId, ticket.id, {
-            name: ticket.name,
-            price: ticket.price,
-            quantityTotal: ticket.quantity,
-            description: ticket.description,
-          })
-        } else {
-          // New Ticket: Create a Ticket
-          await createTicketType(eventId, {
-            name: ticket.name,
-            price: ticket.price,
-            quantityTotal: ticket.quantity,
-            description: ticket.description,
-          })
-        }
-      }
-    } else {
-      // Creation mode: call createEvent to create a new event.
-      const createdEvent = await createEvent(eventForm.value)
-      const newEventId = createdEvent.id
-      // Creation of ticket data
-      for (const ticket of ticketTypes.value) {
-        await createTicketType(newEventId, {
-          name: ticket.name,
-          price: ticket.price,
-          quantityTotal: ticket.quantity,
-          description: ticket.description,
-        })
+    const firstErrorKey = Object.keys(errors.value)[0];
+    if (firstErrorKey) {
+      const errorElement = document.querySelector(`[name="${firstErrorKey}"]`) || document.querySelector(`.${firstErrorKey}`) || document.querySelector(`#${firstErrorKey}`);
+      if (errorElement && typeof errorElement.scrollIntoView === 'function') {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        const mainForm = document.querySelector('form');
+        mainForm?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
+    return;
+  }
+  saving.value = true;
+  try {
+    let currentEventId = eventId;
+
+    const eventDataForPayload = {
+      name: eventForm.value.name,
+      description: eventForm.value.description,
+      location: eventForm.value.location,
+      capacity: Number(eventForm.value.capacity),
+      eventType: eventForm.value.eventType,
+      isFree: eventForm.value.isFree,
+      startDateTime: combineDateAndTime(eventForm.value.startDate, eventForm.value.startTime),
+      endDateTime: combineDateAndTime(eventForm.value.endDate, eventForm.value.endTime),
+
+      tickets: eventForm.value.isFree ? [] : ticketTypes.value.map(ticket => ({
+        name: ticket.name,
+        price: Number(ticket.price),
+        quantityTotal: Number(ticket.quantity),
+        description: ticket.description,
+        salesStart: new Date(combineDateAndTime(ticket.salesStart, '00:00:00')),
+        salesEnd: new Date(combineDateAndTime(ticket.salesEnd, '23:59:59')),
+      })),
+      questions: questions.value.map((q, index) => ({
+        questionText: q.text,
+        isRequired: q.required,
+        displayOrder: q.order !== undefined ? q.order : index + 1,
+      })),
+    };
+
+    // Log the data being sent to the API for debugging
+    console.log('Frontend Date/Time Inputs:', {
+      startDate: eventForm.value.startDate,
+      startTime: eventForm.value.startTime,
+      endDate: eventForm.value.endDate,
+      endTime: eventForm.value.endTime,
+    });
+    console.log('Combined ISO DateTimes:', {
+      startDateTime: eventDataForPayload.startDateTime,
+      endDateTime: eventDataForPayload.endDateTime,
+    });
+    console.log('Event Payload being sent:', JSON.stringify(eventDataForPayload, null, 2));
+
+    // Call the corresponding API based on the mode
+    if (!isEditMode.value) {
+      // Create mode - backend handles tickets and questions in one call
+      const createdEvent = await createEvent(eventDataForPayload);
+      currentEventId = createdEvent.id;
+    } else {
+      // Update mode - backend handles tickets and questions in one call
+      await updateEvent(eventId, eventDataForPayload);
+    }
+
+    // The backend's updateEvent and createEvent methods now handle the monolithic update
+    // of tickets and questions based on the arrays provided in eventDataForPayload
     router.push('/admin/events')
   } catch (err) {
     console.error('Error saving event:', err)
@@ -394,12 +492,21 @@ const removeOption = (question, optionIndex) => {
                   </select>
                 </div>
               </div>
-              <div class="mb-3 mt-3">
-                <label class="form-label">Image URL</label>
-                <input v-model="eventForm.imageUrl" type="text" placeholder="URL to event image" class="form-control" />
-                <div class="form-text">
-                  Enter a URL for the event image. For best results, use a 16:9 aspect ratio image.
-                </div>
+              <div class="mb-3">
+                <label class="form-label">Event Type <span class="text-danger">*</span></label>
+                <select v-model="eventForm.eventType" class="form-select" :class="{ 'is-invalid': errors.eventType }">
+                  <option value="" disabled>Select event type</option>
+                  <option value="SPORTS">Sports</option>
+                  <option value="MUSICAL">Musical</option>
+                  <option value="SOCIAL">Social</option>
+                  <option value="VOLUNTEERING">Volunteering</option>
+                  <option value="CONFERENCE">Conference</option>
+                </select>
+                <div v-if="errors.eventType" class="invalid-feedback">{{ errors.eventType }}</div>
+              </div>
+              <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="isFreeEvent" v-model="eventForm.isFree">
+                <label class="form-check-label" for="isFreeEvent">This is a free event</label>
               </div>
             </div>
             
@@ -426,14 +533,28 @@ const removeOption = (question, optionIndex) => {
                     <input v-model="ticket.description" type="text" placeholder="Brief description" class="form-control" />
                   </div>
                 </div>
-                <div class="row g-3">
+                <div class="row g-3 mb-3">
                   <div class="col-12 col-md-6">
-                    <label class="form-label">Price ($)</label>
-                    <input v-model="ticket.price" type="number" step="0.01" min="0" class="form-control" />
+                    <label class="form-label">Price ($) <span class="text-danger">*</span></label>
+                    <input :id="`ticket_price_${index}`" :name="`ticket_${index}_price`" v-model.number="ticket.price" type="number" step="0.01" min="0" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_price`] }" />
+                    <div v-if="errors[`ticket_${index}_price`]" class="invalid-feedback">{{ errors[`ticket_${index}_price`] }}</div>
                   </div>
                   <div class="col-12 col-md-6">
-                    <label class="form-label">Quantity Available</label>
-                    <input v-model="ticket.quantity" type="number" min="1" class="form-control" />
+                    <label class="form-label">Quantity Available <span class="text-danger">*</span></label>
+                    <input :id="`ticket_quantity_${index}`" :name="`ticket_${index}_quantity`" v-model.number="ticket.quantity" type="number" min="1" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_quantity`] }" />
+                    <div v-if="errors[`ticket_${index}_quantity`]" class="invalid-feedback">{{ errors[`ticket_${index}_quantity`] }}</div>
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label :for="`ticket_salesStart_${index}`" class="form-label">Sales Start Date <span class="text-danger">*</span></label>
+                    <input :id="`ticket_salesStart_${index}`" :name="`ticket_${index}_salesStart`" type="date" v-model="ticket.salesStart" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_salesStart`] }">
+                    <div v-if="errors[`ticket_${index}_salesStart`]" class="invalid-feedback">{{ errors[`ticket_${index}_salesStart`] }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label :for="`ticket_salesEnd_${index}`" class="form-label">Sales End Date <span class="text-danger">*</span></label>
+                    <input :id="`ticket_salesEnd_${index}`" :name="`ticket_${index}_salesEnd`" type="date" v-model="ticket.salesEnd" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_salesEnd`] }">
+                    <div v-if="errors[`ticket_${index}_salesEnd`]" class="invalid-feedback">{{ errors[`ticket_${index}_salesEnd`] }}</div>
                   </div>
                 </div>
               </div>
