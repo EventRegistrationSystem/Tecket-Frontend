@@ -100,6 +100,12 @@ const originalTicketTypes = ref([]);
 const originalQuestions = ref([]);
 
 onMounted(async () => {
+  // Check for tab query parameter and set activeTab
+  const tabFromQuery = route.query.tab;
+  if (tabFromQuery && ['basic', 'tickets', 'questionnaire'].includes(tabFromQuery)) {
+    activeTab.value = tabFromQuery;
+  }
+
   if (isEditMode.value) {
     try {
       loading.value = true

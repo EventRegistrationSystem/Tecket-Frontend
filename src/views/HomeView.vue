@@ -27,7 +27,7 @@
           class="btn btn-warning ms-5 fs-4 mb-2"
           style="font-family: 'Font'"
         >
-          Let's start
+          View our events
         </button>
       </router-link>
     </div>

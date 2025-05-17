@@ -88,6 +88,14 @@ const editEvent = () => {
   router.push(`/admin/events/edit/${eventId}`)
 }
 
+// Function to navigate to edit event form with a specific tab active
+const editEventWithTab = (tabName) => {
+  router.push({
+    path: `/admin/events/edit/${eventId}`,
+    query: { tab: tabName } // Changed 'activeTab' to 'tab'
+  })
+}
+
 // Formatted date (en-US)
 // Add a validity judgement to ensure that the incoming date string is parsed correctly
 const formatDate = (dateString) => {
@@ -266,6 +274,12 @@ const getStatusClass = (status) => {
                   <div v-else>
                     <p class="text-muted">No questions have been configured for this event.</p>
                   </div>
+                  <div class="mt-3 d-flex justify-content-end">
+                    <button @click="editEventWithTab('questionnaire')" class="btn btn-primary" type="button">
+                      <i class="pi pi-receipt me-2"></i>
+                      Manage Questions
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Tickets Tab -->
@@ -295,9 +309,11 @@ const getStatusClass = (status) => {
                     </table>
                   </div>
                   <div class="mt-3 d-flex justify-content-end">
-                    <button class="btn btn-primary" type="button">
-                      <i class="pi pi-plus me-2"></i>
-                      Add Ticket Type
+                    <button 
+                    @click="editEventWithTab('tickets')" 
+                    class="btn btn-primary" type="button">
+                      <i class="pi pi-ticket me-2"></i>
+                      Manage Tickets
                     </button>
                   </div>
                 </div>
@@ -344,11 +360,8 @@ const getStatusClass = (status) => {
                   <i class="pi pi-share-alt me-2"></i>
                   Share Event
                 </button>
+                
                 <button class="btn btn-outline-success w-100 d-flex align-items-center" type="button">
-                  <i class="pi pi-ticket me-2"></i>
-                  Manage Tickets
-                </button>
-                <button class="btn btn-outline-secondary w-100 d-flex align-items-center" type="button">
                   <i class="pi pi-chart-bar me-2"></i>
                   View Reports
                 </button>
@@ -357,7 +370,8 @@ const getStatusClass = (status) => {
                   <i class="pi pi-times-circle me-2"></i>
                   Cancel Event
                 </button>
-                <button v-if="event.status === 'Cancelled'" class="btn btn-outline-success w-100 d-flex align-items-center"
+                <button v-if="event.status === 'Cancelled'" 
+                class="btn btn-outline-success w-100 d-flex align-items-center"
                         type="button">
                   <i class="pi pi-check-circle me-2"></i>
                   Reactivate Event
