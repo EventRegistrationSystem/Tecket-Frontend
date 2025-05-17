@@ -1,26 +1,6 @@
-import { authFetch } from './authRefresh.js';
-import { BASE_URL } from './authServices.js';
+import httpClient from './httpClient';
 
-/**
- * Helper: Parse JSON and throw errors uniformly
- * @param {Response} res
- * @returns {Promise<Object>} json data or empty object
- */
-const handleResponse = async (res) => {
-  const contentType = res.headers.get('content-type') || '';
-
-  if (!res.ok) {
-    const errorText = contentType.includes('application/json')
-      ? (await res.json()).message
-      : await res.text();
-    throw new Error(errorText || `Request failed with status ${res.status}`);
-  }
-
-  if (contentType.includes('application/json')) {
-    return await res.json();
-  }
-  return {};
-};
+// The handleResponse helper is no longer needed as Axios and its interceptors handle this.
 
 /**
  * Fetch paginated list of events
@@ -28,17 +8,13 @@ const handleResponse = async (res) => {
  * @returns {Promise<{ events: Array, pagination: Object }>} 
  */
 export const fetchEvents = async (params = {}) => {
-  const url = new URL(`${BASE_URL}/events`);
-  Object.entries(params).forEach(([key, val]) => {
-    if (val != null) url.searchParams.append(key, String(val));
-  });
-
-  const res = await authFetch(url.toString());
-  const json = await handleResponse(res);
-  return {
-    events: json.data.events,
-    pagination: json.data.pagination
-  };
+  try {
+    const response = await httpClient.get('/events', { params });
+    return response.data.data; 
+  } catch (error) {
+    console.error('Error fetching events:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
@@ -47,9 +23,14 @@ export const fetchEvents = async (params = {}) => {
  * @returns {Promise<Object>} Event details
  */
 export const fetchEventDetails = async (eventId) => {
-  const res = await authFetch(`${BASE_URL}/events/${eventId}`);
-  const json = await handleResponse(res);
-  return json.data;
+  try {
+    const response = await httpClient.get(`/events/${eventId}`);
+    // Assuming backend response is { success: true, data: { ...eventDetails } }
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error fetching event details for ID ${eventId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
@@ -58,13 +39,14 @@ export const fetchEventDetails = async (eventId) => {
  * @returns {Promise<Object>} Created event data
  */
 export const createEvent = async (eventData) => {
-  const res = await authFetch(`${BASE_URL}/events`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(eventData)
-  });
-  const json = await handleResponse(res);
-  return json.data;
+  try {
+    const response = await httpClient.post('/events', eventData);
+    // Assuming backend response is { success: true, data: { ...createdEvent } }
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating event:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
@@ -74,24 +56,28 @@ export const createEvent = async (eventData) => {
  * @returns {Promise<Object>} Updated event data
  */
 export const updateEvent = async (eventId, updatedData) => {
-  const res = await authFetch(`${BASE_URL}/events/${eventId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updatedData)
-  });
-  const json = await handleResponse(res);
-  return json.data;
+  try {
+    const response = await httpClient.put(`/events/${eventId}`, updatedData);
+    // Assuming backend response is { success: true, data: { ...updatedEvent } }
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating event ID ${eventId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };
 
 /**
  * Delete an event by ID
  * @param {number|string} eventId
- * @returns {Promise<string>} Success message
+ * @returns {Promise<string>} Success message or full response data
  */
 export const deleteEvent = async (eventId) => {
-  const res = await authFetch(`${BASE_URL}/events/${eventId}`, {
-    method: 'DELETE'
-  });
-  const json = await handleResponse(res);
-  return json.message || 'Event deleted successfully';
+  try {
+    const response = await httpClient.delete(`/events/${eventId}`);
+    // Assuming backend response is { success: true, message: 'Event deleted successfully' } or similar
+    return response.data; // Return the whole data part which might include a message
+  } catch (error) {
+    console.error(`Error deleting event ID ${eventId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
 };

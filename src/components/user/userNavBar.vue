@@ -1,5 +1,5 @@
 <script>
-import { useUserStore } from "@/store/user";
+import { useUserStore } from "@/store/userStore";
 import router from "@/router";
 export default {
   // Receive Data from parent component/view

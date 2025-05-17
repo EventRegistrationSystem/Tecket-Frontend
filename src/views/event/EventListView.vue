@@ -191,7 +191,7 @@
 import navbar from "@/components/Navbar.vue";
 import FilterPopup from "@/components/FilterPopup.vue";
 import { ref, computed, onMounted } from "vue";
-import { useUserStore } from "@/store/user";
+import { useUserStore } from "@/store/userStore";
 import { useRouter } from 'vue-router';
 
 const events = ref([]);

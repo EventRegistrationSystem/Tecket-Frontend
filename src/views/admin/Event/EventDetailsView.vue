@@ -5,12 +5,6 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 
 // Introducing interface methods from the API layer, based on code implementations you provide
 import { fetchEventDetails } from '@/api/eventServices.js'
-import { fetchTicketTypes } from '@/api/atickets.js'
-// Note: fetchAttendees is not provided in the API part of the code, so this simulates returning an empty array;
-// If you need real data, implement the corresponding interface under /src/api/.
-const fetchAttendees = async (eventId) => {
-  return []  // Returns an empty array by default
-}
 
 const route = useRoute()
 const router = useRouter()
@@ -19,11 +13,10 @@ const eventId = parseInt(route.params.id)
 
 const event = ref(null)
 const loading = ref(true)
-const activeTab = ref('overview')
+const activeTab = ref('tickets')
 
-// Initialise ticket types and participants as empty arrays; wait for API response to update data
+// Initialise ticket types as empty array; wait for API response to update data
 const ticketTypes = ref([])
-const attendees = ref([])
 
 onMounted(async () => {
   try {
@@ -51,10 +44,19 @@ onMounted(async () => {
       isFree: false       
     }
 
-    // // Getting a list of ticket types 
-    // ticketTypes.value = await fetchTicketTypes(eventId)
-    // // Getting participant data 
-    // attendees.value = await fetchAttendees(eventId)
+    // Populate ticketTypes from event.value.tickets
+    if (event.value && event.value.tickets) {
+      ticketTypes.value = event.value.tickets.map(t => ({
+        id: t.id,
+        name: t.name,
+        price: t.price,
+        quantitySold: t.quantitySold || 0,
+        quantityTotal: t.quantityTotal || 0,
+        salesEnd: t.salesEnd
+      }));
+    } else {
+      ticketTypes.value = [];
+    }
   } catch (error) {
     console.error("Error fetching event data:", error)
     // Setting the default data in case of error to prevent the page from reporting errors
@@ -77,7 +79,6 @@ onMounted(async () => {
       isFree: false 
     }
     ticketTypes.value = []
-    attendees.value = []
   } finally {
     loading.value = false
   }
@@ -85,6 +86,14 @@ onMounted(async () => {
 
 const editEvent = () => {
   router.push(`/admin/events/edit/${eventId}`)
+}
+
+// Function to navigate to edit event form with a specific tab active
+const editEventWithTab = (tabName) => {
+  router.push({
+    path: `/admin/events/edit/${eventId}`,
+    query: { tab: tabName } // Changed 'activeTab' to 'tab'
+  })
 }
 
 // Formatted date (en-US)
@@ -110,6 +119,12 @@ const formatTime = (dateString) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// Helper function to format currency values
+const formatCurrency = (value) => {
+  if (typeof value !== 'number') return '$0.00';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'AUD' }).format(value);
 }
 
 // Returns the corresponding CSS class name based on the event state to set the text colour background
@@ -232,46 +247,38 @@ const getStatusClass = (status) => {
             <!-- Tabs Navigation -->
             <div class="bg-white rounded shadow-sm overflow-hidden">
               <div class="d-flex border-bottom">
-                <button @click="activeTab = 'overview'" type="button"
-                        class="px-3 py-2 fs-6 fw-semibold bg-light border-0 no-border-btn"
-                        :class="activeTab === 'overview' ? 'text-primary' : 'text-muted'">
-                  Overview
-                </button>
                 <button @click="activeTab = 'tickets'" type="button"
                         class="px-3 py-2 fs-6 fw-semibold bg-light border-0 no-border-btn"
                         :class="activeTab === 'tickets' ? 'text-primary' : 'text-muted'">
                   Tickets
                 </button>
-                <button @click="activeTab = 'attendees'" type="button"
+                <button @click="activeTab = 'questions'" type="button"
                         class="px-3 py-2 fs-6 fw-semibold bg-light border-0 no-border-btn"
-                        :class="activeTab === 'attendees' ? 'text-primary' : 'text-muted'">
-                  Attendees
+                        :class="activeTab === 'questions' ? 'text-primary' : 'text-muted'">
+                  Questions
                 </button>
               </div>
 
               <!-- Tab Content -->
               <div class="p-3">
-                <!-- Overview Tab -->
-                <div v-if="activeTab === 'overview'">
-                  <div class="row g-4">
-                    <div class="col-12 col-md-4">
-                      <div class="bg-primary bg-opacity-10 p-3 rounded">
-                        <div class="fs-6 fw-semibold text-primary mb-1">Total Revenue</div>
-                        <div class="fs-2 fw-bold text-primary">{{ event.revenue }}</div>
-                      </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                      <div class="bg-success bg-opacity-10 p-3 rounded">
-                        <div class="fs-6 fw-semibold text-success mb-1">Tickets Sold</div>
-                        <div class="fs-2 fw-bold text-success">{{ event.ticketsSold }}</div>
-                      </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                      <div class="bg-secondary bg-opacity-10 p-3 rounded">
-                        <div class="fs-6 fw-semibold text-secondary mb-1">Remaining Capacity</div>
-                        <div class="fs-2 fw-bold text-secondary">{{ event.capacity - event.ticketsSold }}</div>
-                      </div>
-                    </div>
+                <!-- Questions Tab -->
+                <div v-if="activeTab === 'questions'">
+                  <h3 class="fs-5 fw-semibold mb-3">Event Questions</h3>
+                  <div v-if="event && event.eventQuestions && event.eventQuestions.length">
+                    <ul class="list-group">
+                      <li v-for="eq in event.eventQuestions" :key="eq.id" class="list-group-item">
+                        {{ eq.question.questionText }}
+                      </li>
+                    </ul>
+                  </div>
+                  <div v-else>
+                    <p class="text-muted">No questions have been configured for this event.</p>
+                  </div>
+                  <div class="mt-3 d-flex justify-content-end">
+                    <button @click="editEventWithTab('questionnaire')" class="btn btn-primary" type="button">
+                      <i class="pi pi-receipt me-2"></i>
+                      Manage Questions
+                    </button>
                   </div>
                 </div>
 
@@ -281,64 +288,37 @@ const getStatusClass = (status) => {
                     <table class="table table-hover">
                       <thead>
                         <tr class="bg-light border-bottom">
-                          <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Ticket Type</th>
+                          <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Name</th>
                           <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Price</th>
                           <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Sold</th>
                           <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Available</th>
                           <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Total</th>
+                          <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Sales End Date</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr v-for="ticket in ticketTypes" :key="ticket.id" class="border-bottom">
                           <td class="px-3 py-2 text-dark">{{ ticket.name }}</td>
-                          <td class="px-3 py-2 text-dark">{{ ticket.price }}</td>
-                          <td class="px-3 py-2 text-dark">{{ ticket.quantity_sold }}</td>
-                          <td class="px-3 py-2 text-dark">{{ ticket.quantity_total - ticket.quantity_sold }}</td>
-                          <td class="px-3 py-2 text-dark">{{ ticket.quantity_total }}</td>
+                          <td class="px-3 py-2 text-dark">{{ formatCurrency(ticket.price) }}</td>
+                          <td class="px-3 py-2 text-dark">{{ ticket.quantitySold }}</td>
+                          <td class="px-3 py-2 text-dark">{{ ticket.quantityTotal - ticket.quantitySold }}</td>
+                          <td class="px-3 py-2 text-dark">{{ ticket.quantityTotal }}</td>
+                          <td class="px-3 py-2 text-dark">{{ formatDate(ticket.salesEnd) }}</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                   <div class="mt-3 d-flex justify-content-end">
-                    <button class="btn btn-primary" type="button">
-                      <i class="pi pi-plus me-2"></i>
-                      Add Ticket Type
+                    <button 
+                    @click="editEventWithTab('tickets')" 
+                    class="btn btn-primary" type="button">
+                      <i class="pi pi-ticket me-2"></i>
+                      Manage Tickets
                     </button>
                   </div>
                 </div>
 
-                <!-- Attendees Tab -->
-                <div v-if="activeTab === 'attendees'">
-                  <div class="table-responsive">
-                    <table class="table table-hover">
-                      <thead>
-                        <tr class="bg-light border-bottom">
-                          <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Name</th>
-                          <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Email</th>
-                          <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Ticket Type</th>
-                          <th class="px-3 py-2 text-start fs-6 fw-semibold text-muted">Purchase Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="attendee in attendees" :key="attendee.id" class="border-bottom">
-                          <td class="px-3 py-2 text-dark fw-medium">{{ attendee.name }}</td>
-                          <td class="px-3 py-2 text-dark">{{ attendee.email }}</td>
-                          <td class="px-3 py-2 text-dark">{{ attendee.ticketType }}</td>
-                          <td class="px-3 py-2 text-dark">{{ formatDate(attendee.purchaseDate) }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="mt-3 d-flex justify-content-between align-items-center">
-                    <div class="fs-6 text-muted">
-                      Showing <span class="fw-semibold">{{ attendees.length }}</span> of <span class="fw-semibold">{{ event.ticketsSold }}</span> attendees
-                    </div>
-                    <button class="btn btn-success" type="button">
-                      <i class="pi pi-download me-2"></i>
-                      Export Attendees
-                    </button>
-                  </div>
-                </div>
+                <!-- Attendees tab has been removed -->
               </div>
             </div>
           </div>
@@ -380,11 +360,8 @@ const getStatusClass = (status) => {
                   <i class="pi pi-share-alt me-2"></i>
                   Share Event
                 </button>
+                
                 <button class="btn btn-outline-success w-100 d-flex align-items-center" type="button">
-                  <i class="pi pi-ticket me-2"></i>
-                  Manage Tickets
-                </button>
-                <button class="btn btn-outline-secondary w-100 d-flex align-items-center" type="button">
                   <i class="pi pi-chart-bar me-2"></i>
                   View Reports
                 </button>
@@ -393,7 +370,8 @@ const getStatusClass = (status) => {
                   <i class="pi pi-times-circle me-2"></i>
                   Cancel Event
                 </button>
-                <button v-if="event.status === 'Cancelled'" class="btn btn-outline-success w-100 d-flex align-items-center"
+                <button v-if="event.status === 'Cancelled'" 
+                class="btn btn-outline-success w-100 d-flex align-items-center"
                         type="button">
                   <i class="pi pi-check-circle me-2"></i>
                   Reactivate Event

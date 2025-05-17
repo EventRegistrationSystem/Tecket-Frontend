@@ -52,12 +52,19 @@
               {{ errors.pwd }}
             </div>
           </div>
+          <!-- Display general error message -->
+          <div v-if="errors.general" class="alert alert-danger mt-3" role="alert">
+            {{ errors.general }}
+          </div>
           <button
             type="submit"
-            class="btn btn-primary"
-            @click.prevent="signIn(email, pwd)"
+            class="btn btn-primary mt-3" 
+            @click.prevent="signIn" 
+            :disabled="isLoading"
           >
-            Submit
+            <span v-if="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span v-if="isLoading"> Logging in...</span>
+            <span v-else>Submit</span>
           </button>
         </form>
         <div class="col-4"></div>
@@ -70,8 +77,8 @@
 import navbar from "@/components/Navbar.vue";
 import Footer from "@/components/Footer.vue";
 import router from "@/router";
-import { useUserStore } from "@/store/user";
-
+import { useUserStore } from "@/store/userStore";
+import { loginUser } from "@/api/authServices.js"; // Import the new service
 
 export default {
   components: {
@@ -83,10 +90,13 @@ export default {
     return {
       email: "",
       pwd: "",
-      data: "",
-      response: null,
-      // Use an object for field-specific errors
-      errors: {}
+      // Use an object for field-specific errors and a general error
+      errors: {
+        email: null,
+        pwd: null,
+        general: null,
+      },
+      isLoading: false, // For loading state
     };
   },
 
@@ -99,65 +109,62 @@ export default {
     checkState() {
       const userStore = useUserStore();
       if (userStore.isAuthenticated) {
-        console.log("User state verified");
+        console.log("User state verified, redirecting to home.");
         router.push("/");
       }
     },
 
-    async signIn(email, pwd) {
-      // Integration with backend
+    validateForm() {
+      this.errors = { email: null, pwd: null, general: null }; // Clear previous errors
+      let isValid = true;
 
-      // Clear previous errors
-      this.errors = {};
-
-      // Validate email format
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(this.email)) {
-        this.errors.email = "Invalid email address!";
-        return;
+      if (!this.email || !emailPattern.test(this.email)) {
+        this.errors.email = "Please enter a valid email address.";
+        isValid = false;
       }
-      // Validate password is not empty
       if (!this.pwd) {
-        this.errors.pwd = "Password is required!";
+        this.errors.pwd = "Password is required.";
+        isValid = false;
+      }
+      return isValid;
+    },
+
+    async signIn() { // Removed parameters as we use this.email and this.pwd
+      if (!this.validateForm()) {
         return;
       }
 
+      this.isLoading = true;
+      this.errors.general = null; // Clear general error before new attempt
       const userStore = useUserStore();
-      const url = import.meta.env.VITE_API_BASE_URL + '/auth/login';
-      // Send data to backend
 
-      await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          accept: "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          password: pwd,
-        }),
-      })
-        .then((response) => {
-          return response.json();
-        })
-        .then((responseData) => {
-          this.dt = responseData.data;
-          const accessToken = this.dt.accessToken;
-          const role = this.dt.user.role;
+      try {
+        // Use the new loginUser service
+        const authData = await loginUser(this.email, this.pwd);
+        // authData should be { user, accessToken }
 
-          // Store token retrieved from API
-          if (accessToken) {
-            userStore.setAccessToken(accessToken);
-            userStore.setRole(role);
-            router.push("/");
-          } else {
-            window.alert("Login successfully but no token is store!");
-          }
-        })
-        .catch((error) => {
-          this.err = error;
-        });
+        if (authData && authData.user && authData.accessToken) {
+          userStore.setAuthData(authData.user, authData.accessToken); // Use the new action
+          router.push("/"); // Navigate to home or dashboard
+        } else {
+          // This case should ideally not happen if API guarantees structure on success
+          this.errors.general = "Login successful but received unexpected data.";
+          console.error("Login response missing user or accessToken:", authData);
+        }
+      } catch (error) {
+        console.error("Login error caught in component:", error);
+        if (error && error.message) {
+          this.errors.general = error.message; // Display error message from API
+        } else if (typeof error === 'string') {
+          this.errors.general = error;
+        }
+        else {
+          this.errors.general = "An unexpected error occurred during login. Please try again.";
+        }
+      } finally {
+        this.isLoading = false;
+      }
     },
   },
 };

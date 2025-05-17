@@ -12,15 +12,14 @@ defineEmits(["toggle-sidebar"]);
 
 <script>
 
-import { useUserStore } from "@/store/user";
+import { useUserStore } from "@/store/userStore";
 import router from "@/router";
 
 export default {
   methods: {
     logOut() {
       const userStore = useUserStore();
-      userStore.clearAccessToken();
-      userStore.clearRole();
+      userStore.clearUserSession();
 
       // Action NEEDED for refreshToken
       router.push("/");
