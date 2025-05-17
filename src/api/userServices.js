@@ -117,3 +117,23 @@ export const updateUserProfile = async (profileData) => {
     throw error.response?.data || error;
   }
 };
+
+/**
+ * Change the current authenticated user's password.
+ * @param {Object} passwords - Object containing current and new passwords.
+ * @param {string} passwords.currentPassword - The user's current password.
+ * @param {string} passwords.newPassword - The user's new password.
+ * @returns {Promise<Object>} Response data, typically a success message or status.
+ */
+export const changeUserPassword = async ({ currentPassword, newPassword }) => {
+  try {
+    // The backend endpoint for changing password needs to be confirmed.
+    // Common patterns are /users/change-password, /auth/change-password, or /users/me/password
+    const response = await httpClient.post('/users/change-password', { currentPassword, newPassword });
+    // Assuming backend returns { success: true, message: 'Password changed successfully' } or similar
+    return response.data;
+  } catch (error) {
+    console.error('Error changing password:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
+};
