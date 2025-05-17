@@ -9,8 +9,8 @@ This document tracks the progress of standardizing and refactoring the frontend 
 The primary goal was to standardize how the frontend handles authentication, API calls, user sessions, and routing related to authentication.
 
 **1. Centralized HTTP Client (Axios):**
-    *   **File Created:** `src/api/httpClient.js`
-    *   **Details:**
+    * **File Created:** `src/api/httpClient.js`
+    * **Details:**
         *   An Axios instance (`httpClient`) was created and configured with a base URL (using environment variables with a fallback).
         *   **Request Interceptor:** Automatically injects the `Authorization: Bearer <token>` header into outgoing requests using the access token from the Pinia user store. It also sets `withCredentials: true` for specific cookie-dependent requests like `/auth/refresh-token` and `/auth/logout`.
         *   **Response Interceptor:**
@@ -97,7 +97,75 @@ With the authentication module standardized, the next steps involve applying sim
     *   Ensure all external URLs or configurations (like Stripe publishable keys, if any) are managed via environment variables (`.env` files).
 
 **7. Code Cleanup:**
-    *   Remove the old `src/api/authRefresh.js` file as its functionality is now integrated into `httpClient.js`.
-    *   Remove any redundant or unused API call implementations.
+    *   **COMPLETED (2025-05-17):** `src/api/aquestions.js` (functionality moved to `src/api/questionServices.js`).
+    *   **COMPLETED (2025-05-17):** `src/api/atickets.js` (functionality moved to `src/api/ticketServices.js`).
+    *   **COMPLETED (2025-05-17):** `src/api/auser.js` (functionality merged into `src/api/userServices.js`).
+    *   **COMPLETED (2025-05-17):** `src/api/authRefresh.js` (functionality superseded by interceptors in `src/api/httpClient.js`).
+    *   **Status:** Frontend API service files (`authServices.js`, `eventServices.js`, `userServices.js`, `ticketServices.js`, `questionServices.js`) have been standardized to use the central `httpClient`. Old/redundant files have been removed.
+
+## III. Completed Tasks: Backend Refactoring for Ticket & Question Management (Date: 2025-05-17)
+
+Following the frontend API standardization, backend services for event, ticket, and question management were reviewed and refactored for clarity, consistency, and to support more granular control.
+
+**1. Ticket Management (Backend - `Capstone-Backend`):**
+    *   **`EventService.updateEvent` Refined:**
+        *   The logic for managing the entire ticket collection (delete unsold, then add new from payload) within `EventService.updateEvent` (called by `PUT /events/:id`) was **commented out/removed**.
+        *   **Rationale:** To enforce that all ticket modifications (add, update specific, delete specific) after initial event creation occur exclusively through the dedicated `ticketRoutes.ts` endpoints (`/events/:eventId/tickets/*`). This makes the `PUT /events/:id` endpoint's behavior for tickets clearer (i.e., it primarily focuses on core event properties).
+    *   **Dedicated Ticket API Endorsed:** The existing dedicated `ticketRoutes.ts`, `TicketController.ts`, and `TicketService.ts` are confirmed as the correct approach for granular ticket management.
+
+**2. Question Management (Backend - `Capstone-Backend`):**
+    *   **`EventService.createEvent` Aligned:**
+        *   Modified to first attempt to find an existing global `Question` by its `questionText` before creating a new one, aligning its behavior with the more robust logic previously in `EventService.updateEvent`.
+    *   **Dedicated API Endpoints for Granular Question Management Implemented:**
+        *   **DTOs Created:** `src/types/questionTypes.ts` (e.g., `AddEventQuestionLinkDTO`, `UpdateEventQuestionLinkDTO`).
+        *   **New Service:** `src/services/eventQuestionService.ts` created with methods for CRUD operations on event-question links, including organizer verification and safeguards (e.g., preventing deletion of questions with responses).
+        *   **New Controller:** `src/controllers/eventQuestionController.ts` created to handle HTTP requests for these operations.
+        *   **New Routes:** `src/routes/eventQuestionRoutes.ts` created and mounted under `/api/events/:eventId/questions` (via `src/routes/eventRoutes.ts`). Endpoints include:
+            *   `GET /`: List questions for an event.
+            *   `POST /`: Add/link a question to an event.
+            *   `PUT /:eventQuestionId`: Update an event-question link.
+            *   `DELETE /:eventQuestionId`: Delete an event-question link.
+    *   **`EventService.updateEvent` Refined for Questions:**
+        *   The complex question synchronization logic was **removed** from `EventService.updateEvent`. This method now focuses on core event property updates. Management of event questions post-creation is now handled by the new dedicated endpoints.
+
+## IV. Next Steps for Integration
+
+With foundational backend and frontend API layers standardized, focus shifts to leveraging these improvements.
+
+**A. Frontend (`Capstone-Frontend`):**
+
+1.  **Update `src/api/questionServices.js`:**
+    *   Ensure functions in `questionServices.js` correctly map to the new dedicated backend endpoints for granular question management:
+        *   `fetchEventQuestions(eventId)` (for `GET /events/:eventId/questions`)
+        *   `addQuestionToEvent(eventId, questionData)` (for `POST /events/:eventId/questions`)
+        *   `updateEventQuestionLink(eventId, eventQuestionId, linkData)` (for `PUT /events/:eventId/questions/:eventQuestionId`)
+        *   `deleteEventQuestionLink(eventId, eventQuestionId)` (for `DELETE /events/:eventId/questions/:eventQuestionId`)
+        *   (Optional) `fetchAllGlobalQuestions()` if a UI for picking from a global bank is desired (requires a backend `GET /questions` endpoint, which is a future enhancement).
+
+2.  **Implement/Refactor UI for Ticket and Question Management:**
+    *   **Ticket Management UI:** Develop or update the UI (e.g., a "Tickets" tab within an event's admin/edit view) to use the functions from `src/api/ticketServices.js` for listing, adding, editing, and deleting ticket types.
+    *   **Question Management UI:** Develop or update the UI (e.g., a "Questions" tab within an event's admin/edit view) to use the functions from `src/api/questionServices.js` for granular management of questions linked to an event.
+
+3.  **Review and Refactor Components Using Event/User Services:**
+    *   Audit components that use `eventServices.js` and `userServices.js` to ensure they correctly handle the data structures returned by the refactored services and `httpClient`.
+    *   Implement proper loading states and error display.
+
+4.  **Verify Token Refresh and Session Management:**
+    *   Thoroughly test login, logout, and scenarios where the access token might expire across different API calls to ensure the refresh mechanism in `httpClient` works as expected.
+
+5.  **Implement Role-Based Access Control (RBAC) More Granularly in UI:**
+    *   While basic route protection is in place, extend RBAC to conditionally render UI elements (buttons, sections, menu items) based on `userStore.currentUser.role`.
+
+6.  **Global Error Handling/Notifications:**
+    *   Consider implementing a global UI notification system (e.g., toasts) that can be triggered by the `httpClient` response interceptor or by components for API errors.
+
+**B. Backend (`Capstone-Backend`):**
+
+1.  **Add Joi Validation for New Question DTOs:**
+    *   **Status: COMPLETED (2025-05-17).** Joi validation schemas were created in `src/validation/eventQuestionValidation.ts` for `AddEventQuestionLinkDTO` and `UpdateEventQuestionLinkDTO`. These schemas were applied as middleware in `src/routes/eventQuestionRoutes.ts`.
+2.  **Global Question Bank Management (Optional Future Enhancement):**
+    *   If desired, implement API endpoints (`GET /questions`, `POST /questions`, etc.) and associated services/controllers for managing the global `Question` table directly.
+3.  **Review `EventService.createEvent` for Ticket/Question Creation:**
+    *   Consider if `EventService.createEvent` should internally call the new `EventQuestionService.addQuestionToEvent` (and potentially `TicketService.createTicket`) for creating initial questions/tickets, to further centralize that specific logic. For now, its current transactional approach is acceptable.
 
 This summary should provide a good overview of our progress and a roadmap for continuing the integration and refactoring efforts.
