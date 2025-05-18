@@ -20,6 +20,12 @@ export const useRegistrationStore = defineStore('registration', {
   },
   actions: {
     setEvent(eventData) {
+      console.log('[Store setEvent] Received eventData:', JSON.parse(JSON.stringify(eventData)));
+      if (eventData && eventData.eventQuestions) {
+        console.log('[Store setEvent] eventData.eventQuestions:', JSON.parse(JSON.stringify(eventData.eventQuestions)));
+      } else {
+        console.log('[Store setEvent] No eventQuestions in received eventData.');
+      }
       this.eventDetails = eventData
       this.eventId = eventData.id
       // Potentially pre-populate selectedTickets if eventData.tickets exists
@@ -35,7 +41,8 @@ export const useRegistrationStore = defineStore('registration', {
         status: t.status,
         quantityTotal: t.quantityTotal,
         quantitySold: t.quantitySold
-      })) : []
+      })) : [];
+      this.initializeParticipants(); // Ensure participants are initialized/updated when event changes
     },
     updateTicketQuantity(ticketId, quantity) {
       const ticket = this.selectedTickets.find((t) => t.ticketId === ticketId)
@@ -46,42 +53,57 @@ export const useRegistrationStore = defineStore('registration', {
     },
     // Initializes or adjusts the participants array based on total selected tickets
     initializeParticipants() {
-      const totalTickets = this.totalSelectedTickets
-      const currentParticipants = this.participants.length
-
-      if (totalTickets > currentParticipants) {
-        // Add new participant stubs
-        for (let i = 0; i < totalTickets - currentParticipants; i++) {
-          this.participants.push({
-            email: '',
-            firstName: '',
-            lastName: '',
-            phoneNumber: '',
-            dateOfBirth: '', // Consider date format
-            address: '',
-            city: '',
-            state: '',
-            zipCode: '',
-            country: '',
-            responses: [], // { eventQuestionId, responseText }
-          })
-        }
-      } else if (totalTickets < currentParticipants) {
-        // Remove excess participants from the end
-        this.participants.splice(totalTickets)
+      console.log('[Store initializeParticipants] Starting.');
+      let targetParticipantCount = this.totalSelectedTickets;
+      // For free events, ensure at least one participant if no tickets were "selected"
+      if (this.eventDetails && this.eventDetails.isFree && targetParticipantCount === 0) {
+        targetParticipantCount = 1;
+        console.log('[Store initializeParticipants] Free event, ensuring 1 participant.');
       }
-      // Ensure each participant has a responses array for each event question
-      if (this.eventDetails && this.eventDetails.eventQuestions) {
-        this.participants.forEach(p => {
+
+      const currentParticipantsArray = [...this.participants]; // Work with a copy
+      const currentParticipantCount = currentParticipantsArray.length;
+      console.log(`[Store initializeParticipants] Target: ${targetParticipantCount}, Current: ${currentParticipantCount}`);
+
+
+      if (targetParticipantCount > currentParticipantCount) {
+        for (let i = 0; i < targetParticipantCount - currentParticipantCount; i++) {
+          currentParticipantsArray.push({
+            email: '', firstName: '', lastName: '',
+            phoneNumber: '', dateOfBirth: '', address: '',
+            city: '', state: '', zipCode: '', country: '',
+            responses: [] // Initialize responses array
+          });
+        }
+      } else if (targetParticipantCount < currentParticipantCount) {
+        currentParticipantsArray.splice(targetParticipantCount);
+      }
+      
+      // Now, ensure each participant has the correct response structure based on eventQuestions
+      if (this.eventDetails && this.eventDetails.eventQuestions && this.eventDetails.eventQuestions.length > 0) {
+        console.log('[Store initializeParticipants] Processing eventQuestions:', JSON.parse(JSON.stringify(this.eventDetails.eventQuestions)));
+        currentParticipantsArray.forEach((p, pIndex) => {
+          const existingResponsesMap = new Map(p.responses.map(r => [r.eventQuestionId, r.responseText]));
           p.responses = this.eventDetails.eventQuestions.map(q => ({
-            eventQuestionId: q.id, // This is EventQuestion.id
-            questionId: q.question.id, // This is Question.id
+            eventQuestionId: q.id, // This is EventQuestion.id (unique link ID)
+            questionId: q.question.id, // This is the actual Question.id from global questions table
             questionText: q.question.questionText,
             isRequired: q.isRequired,
-            responseText: ''
+            questionType: q.question.questionType, // e.g., TEXT, MULTIPLE_CHOICE
+            validationRules: q.question.validationRules, // e.g., { options: ["A", "B"] } for MCQ
+            responseText: existingResponsesMap.get(q.id) || '' // Preserve existing response if any
           }));
+          console.log(`[Store initializeParticipants] Participant ${pIndex} responses mapped:`, JSON.parse(JSON.stringify(p.responses)));
+        });
+      } else {
+        console.log('[Store initializeParticipants] No eventQuestions found or empty. Ensuring empty responses for participants.');
+        // No event questions, ensure responses array is empty for all participants
+        currentParticipantsArray.forEach(p => {
+          p.responses = [];
         });
       }
+      this.participants = currentParticipantsArray; // Assign the modified array back to the state
+      console.log('[Store initializeParticipants] Final participants state:', JSON.parse(JSON.stringify(this.participants)));
     },
     updateParticipantInfo(index, participantData) {
       if (this.participants[index]) {
