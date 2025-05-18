@@ -69,13 +69,13 @@ httpClient.interceptors.response.use(
 
     // If the error was on the refresh-token endpoint itself (e.g. refresh token invalid)
     if (error.response?.status === 401 && originalRequest.url === '/auth/refresh-token') {
-        console.error('Refresh token is invalid or expired.');
+        console.error('Refresh token is invalid or expired. This was a 401 on /auth/refresh-token itself.');
         userStore.clearUserSession();
         window.location.href = '/signIn';
     }
 
     // For other errors, or if refresh fails, just pass the error along
-    // You might add global error logging or UI notifications here
+    // might add global error logging or UI notifications here
     return Promise.reject(error);
   }
 );
