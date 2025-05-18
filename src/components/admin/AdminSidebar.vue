@@ -14,9 +14,10 @@ const route = useRoute();
 
 const activeItem = computed(() => {
   const currentPath = route.path;
-  if (currentPath.startsWith("/admin/events")) return "events";
-  else if (currentPath.startsWith("/admin/users")) return "users";
-  else if (currentPath.startsWith("/admin/tickets")) return "tickets";
+  if (currentPath.startsWith("/admin/events")) 
+    return "events";
+  else if (currentPath.startsWith("/admin/users")) 
+    return "users";
   return "dashboard";
 });
 
@@ -38,13 +39,7 @@ const menuItems = [
     label: "Users", 
     icon: "pi pi-users", 
     route: "/admin/users" 
-  },
-  {
-    id: "tickets",
-    label: "Tickets",
-    icon: "pi pi-ticket",
-    route: "/admin/tickets",
-  },
+  }
 ];
 
 const sidebarStyle = computed(() => {
