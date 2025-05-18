@@ -132,24 +132,24 @@ const routes = [
   },
 
   // -- Ticket Management Routes (Admin) --
-  {
-    path: "/admin/events/:eventId/tickets", // Tickets for a specific event
-    name: "AdminEventTickets",  
-    component: () => import("@/views/admin/Tickets/TicketsManagement.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-  {
-    path: "/admin/events/:eventId/tickets/create",
-    name: "AdminEventTicketCreate",  
-    component: () => import("@/views/admin/Tickets/TicketTypeCreate.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-  {
-    path: "/admin/events/:eventId/tickets/edit/:ticketId", // Corrected path for clarity
-    name: "AdminEventTicketEdit",  
-    component: () => import("@/views/admin/Tickets/TicketTypeEdit.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
+  // {
+  //   path: "/admin/events/:eventId/tickets", // Tickets for a specific event
+  //   name: "AdminEventTickets",  
+  //   component: () => import("@/views/admin/Tickets/TicketsManagement.vue"),
+  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
+  // },
+  // {
+  //   path: "/admin/events/:eventId/tickets/create",
+  //   name: "AdminEventTicketCreate",  
+  //   component: () => import("@/views/admin/Tickets/TicketTypeCreate.vue"),
+  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
+  // },
+  // {
+  //   path: "/admin/events/:eventId/tickets/edit/:ticketId", // Corrected path for clarity
+  //   name: "AdminEventTicketEdit",  
+  //   component: () => import("@/views/admin/Tickets/TicketTypeEdit.vue"),
+  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
+  // },
 
   // -- Questionnaire Management Routes (Admin) --
   {
