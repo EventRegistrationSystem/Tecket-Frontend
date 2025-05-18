@@ -167,14 +167,22 @@ const isLastParticipant = computed(() => {
   return currentParticipantIndex.value === registrationStore.getParticipantCount - 1
 })
 
-// Watch for changes in currentParticipant and update the store
-// This provides a basic auto-save per field change for the current participant.
-// For more complex scenarios, you might save on blur or with a dedicated save button per participant.
-watch(currentParticipant, (newData) => {
-  if (newData) {
-    registrationStore.updateParticipantInfo(currentParticipantIndex.value, newData)
-  }
-}, { deep: true })
+// The deep watch on currentParticipant was likely causing recursive updates
+// because v-model on currentParticipant.email (etc.) mutates the object in the store,
+// which then causes the computed currentParticipant to update, re-triggering the watch.
+
+// Pinia's state is reactive, so v-model should update the store directly.
+
+// The registrationStore.updateParticipantInfo action might also contribute if it replaces
+// the object instance in a way that the watcher sees as a new change.
+
+// Removing this watcher as v-model should suffice for updating the reactive store object.
+
+// watch(currentParticipant, (newData) => {
+//  if (newData) {
+//    registrationStore.updateParticipantInfo(currentParticipantIndex.value, newData)
+//  }
+// }, { deep: true })
 
 
 const handleStepClick = (clickedStepIndex) => {

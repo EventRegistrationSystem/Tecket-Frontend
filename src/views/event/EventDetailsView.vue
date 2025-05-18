@@ -120,7 +120,12 @@ onMounted(async () => {
     const response = await fetchEventDetails(eventId) 
     eventDetail.value = response 
     // Assuming fetchEventDetails returns the event object directly (it returns response.data.data as per eventServices.js)
-    console.log('Event Details Loaded:', eventDetail.value)
+    console.log('Event Details Loaded in View:', JSON.parse(JSON.stringify(eventDetail.value))); // Log a deep copy
+    if (eventDetail.value && eventDetail.value.eventQuestions) {
+      console.log('Event Questions in View:', JSON.parse(JSON.stringify(eventDetail.value.eventQuestions)));
+    } else {
+      console.log('No Event Questions found in eventDetail.value in View');
+    }
   } catch (err) {
     console.error("Get Event Details Error：", err)
     error.value = err.message || 'Failed to load event details.'

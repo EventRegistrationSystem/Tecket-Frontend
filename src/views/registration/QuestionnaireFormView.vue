@@ -45,6 +45,8 @@
             </h5>
             
             <div v-for="(question, qIndex) in eventQuestions" :key="question.id" class="mb-3">
+              <!-- Debug log for each question -->
+              <!-- {{ console.log(`Rendering Q: ${question.question.questionText}, Type: ${question.question.questionType}, Rules:`, question.question.validationRules) }} -->
               <label :for="`question-${currentParticipantIndex}-${qIndex}`" class="form-label">
                 {{ question.question.questionText }}
                 <span v-if="question.isRequired" class="text-danger">*</span>
@@ -62,8 +64,8 @@
               />
 
               <!-- MULTIPLE_CHOICE (Dropdown/Select) -->
-              <select 
-                v-else-if="question.question.questionType === 'MULTIPLE_CHOICE' && question.question.validationRules?.options"
+              <select
+                v-else-if="question.question.questionType === 'MULTIPLE_CHOICE' && question.question.validationRules?.options && question.question.validationRules.options.length > 0"
                 class="form-select"
                 :id="`question-${currentParticipantIndex}-${qIndex}`"
                 :value="getParticipantResponse(question.id)"
@@ -75,9 +77,19 @@
                   {{ option }}
                 </option>
               </select>
-              
-              <!-- Add other question types here (e.g., CHECKBOX, RADIO) -->
 
+              <!-- Fallback to TEXT input if type is not recognized or MCQ options are missing -->
+              <input
+                v-else
+                type="text"
+                class="form-control"
+                :id="`question-${currentParticipantIndex}-${qIndex}-fallback`"
+                :value="getParticipantResponse(question.id)"
+                @input="updateResponse(question.id, $event.target.value)"
+                :required="question.isRequired"
+                placeholder="Enter your answer"
+              />
+              
               <small v-if="formErrors[currentParticipantIndex]?.[question.id]" class="text-danger">
                 {{ formErrors[currentParticipantIndex][question.id] }}
               </small>
