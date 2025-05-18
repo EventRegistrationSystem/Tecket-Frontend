@@ -2,268 +2,267 @@
   <div>
     <navbar />
     <StepIndicator
-      :steps="['Select Ticket', 'Complete Info', 'Questionnaire', 'Review', 'Checkout']"
-      :currentStep="currentStep"
+      :steps="['Select Ticket', 'Personal Info', 'Questionnaire', 'Review', 'Checkout']"
+      :currentStep="registrationStore.currentStep"
       @step-clicked="handleStepClick"
     />
 
     <div class="container mt-4">
-      <h4 class="section-title">Questionnaire</h4>
+      <h4 class="section-title">EVENT QUESTIONNAIRE</h4>
 
-      <!-- Ticket switch button area -->
-      <div class="ticket-tabs mb-3">
-        <button
-          v-for="(ticket, index) in ticketStore.ticketList"
-          :key="ticket.id || index"
-          @click="currentTicketIndex = index"
-          :class="['btn', currentTicketIndex === index ? 'btn-primary' : 'btn-outline-secondary', 'me-2']"
-        >
-          Participant #{{ index + 1 }}
-          <span v-if="!isTicketComplete(ticket)" class="incomplete-badge">!</span>
-        </button>
+      <div v-if="!registrationStore.isEventLoaded || registrationStore.getParticipantCount === 0" class="text-center">
+        <p>Please complete previous steps first.</p>
+        <router-link :to="{ name: 'TicketSelection' }" class="btn btn-secondary">Back to Ticket Selection</router-link>
+      </div>
+      
+      <div v-else-if="!eventQuestions || eventQuestions.length === 0" class="text-center">
+        <p>No questionnaire for this event. You can proceed to the next step.</p>
+         <div class="d-flex justify-content-between mt-4 mb-5">
+            <button type="button" class="btn btn-outline-secondary" @click="goBackToPersonalInfo">Back to Personal Info</button>
+            <button class="btn btn-primary" @click="goToNextStep">Next: Review</button>
+          </div>
       </div>
 
-      <form @submit.prevent="goToReview">
-        <!-- Display only the contents of the currently selected ticket questionnaire -->
-        <div class="card custom-card">
-          <h5 class="card-title">
-            Participant #{{ currentTicketIndex + 1 }} - Questionnaire
-          </h5>
-          <!-- Emergency contact information -->
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Emergency Contact Name</label>
-              <input
-                type="text"
-                class="form-control"
-                v-model="currentTicket.survey.emergencyContactName"
-              />
-              <small
-                v-if="currentTicket.survey.errors && currentTicket.survey.errors.emergencyContactName"
-                class="text-danger"
-              >{{ currentTicket.survey.errors.emergencyContactName }}</small>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Emergency Contact Phone</label>
-              <input
-                type="tel"
-                class="form-control"
-                v-model="currentTicket.survey.emergencyContactPhone"
-              />
-              <small
-                v-if="currentTicket.survey.errors && currentTicket.survey.errors.emergencyContactPhone"
-                class="text-danger"
-              >{{ currentTicket.survey.errors.emergencyContactPhone }}</small>
-            </div>
-          </div>
+      <div v-else class="questionnaire-content">
+        <!-- Participant Tabs -->
+        <div class="ticket-tabs mb-3">
+          <button
+            v-for="(_, index) in registrationStore.participants"
+            :key="index"
+            @click="currentParticipantIndex = index"
+            :class="['btn', currentParticipantIndex === index ? 'btn-primary' : 'btn-outline-secondary', 'me-2']"
+          >
+            Participant #{{ index + 1 }}
+            <span v-if="!areParticipantQuestionsComplete(registrationStore.participants[index])" class="incomplete-badge">!</span>
+          </button>
+        </div>
 
-          <!-- Medical condition -->
-          <div class="row g-3 mt-3">
-            <div class="col-md-6">
-              <label class="form-label">
-                Any medical conditions we should be aware of?
+        <form @submit.prevent="goToNextStep" v-if="currentParticipant && eventQuestions.length > 0">
+          <div class="card custom-card">
+            <h5 class="card-title">
+              Questions for Participant #{{ currentParticipantIndex + 1 }}
+              ({{ currentParticipant.firstName }} {{ currentParticipant.lastName }})
+            </h5>
+            
+            <div v-for="(question, qIndex) in eventQuestions" :key="question.id" class="mb-3">
+              <!-- Debug log for each question -->
+              <!-- {{ console.log(`Rendering Q: ${question.question.questionText}, Type: ${question.question.questionType}, Rules:`, question.question.validationRules) }} -->
+              <label :for="`question-${currentParticipantIndex}-${qIndex}`" class="form-label">
+                {{ question.question.questionText }}
+                <span v-if="question.isRequired" class="text-danger">*</span>
               </label>
-              <select class="form-select" v-model="currentTicket.survey.hasMedicalCondition">
-                <option value="">Please select</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-              <small
-                v-if="currentTicket.survey.errors && currentTicket.survey.errors.hasMedicalCondition"
-                class="text-danger"
-              >{{ currentTicket.survey.errors.hasMedicalCondition }}</small>
-            </div>
-          </div>
-
-          <!-- Reason for registration -->
-          <div class="row g-3 mt-3">
-            <div class="col-md-12">
-              <label class="form-label">Why are you registering for this event?</label>
-              <textarea
-                class="form-control"
-                rows="3"
-                v-model="currentTicket.survey.reason"
-              ></textarea>
-              <small
-                v-if="currentTicket.survey.errors && currentTicket.survey.errors.reason"
-                class="text-danger"
-              >{{ currentTicket.survey.errors.reason }}</small>
-            </div>
-          </div>
-        </div>
-
-        <!-- Event Questionnaire (global for all tickets) -->
-        <div class="card custom-card">
-          <h5 class="card-title">Event Questionnaire</h5>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">How did you hear about the event?</label>
-              <input
+              
+              <!-- TEXT Input -->
+              <input 
+                v-if="question.question.questionType === 'TEXT'"
                 type="text"
                 class="form-control"
-                v-model="ticketStore.eventSurvey.source"
+                :id="`question-${currentParticipantIndex}-${qIndex}`"
+                :value="getParticipantResponse(question.id)"
+                @input="updateResponse(question.id, $event.target.value)"
+                :required="question.isRequired"
               />
-              <small
-                v-if="ticketStore.eventSurvey.errors.source"
-                class="text-danger"
-              >{{ ticketStore.eventSurvey.errors.source }}</small>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Any dietary restrictions?</label>
-              <textarea
-                class="form-control"
-                rows="2"
-                v-model="ticketStore.eventSurvey.dietaryRestrictions"
-              ></textarea>
-            </div>
-          </div>
-        </div>
 
-        <!-- Team Selection -->
-        <div class="card custom-card">
-          <h5 class="card-title">Team Options</h5>
-          <div class="row g-3">
-            <div class="col-md-12">
-              <label class="form-label">Would you like to join or create a team?</label>
-              <select class="form-select" v-model="ticketStore.teamOption">
-                <option value="">Please select</option>
-                <option value="join">Join an existing team</option>
-                <option value="create">Create a new team</option>
-                <option value="none">I don't want to join a team</option>
+              <!-- MULTIPLE_CHOICE (Dropdown/Select) -->
+              <select
+                v-else-if="question.question.questionType === 'MULTIPLE_CHOICE' && question.question.validationRules?.options && question.question.validationRules.options.length > 0"
+                class="form-select"
+                :id="`question-${currentParticipantIndex}-${qIndex}`"
+                :value="getParticipantResponse(question.id)"
+                @change="updateResponse(question.id, $event.target.value)"
+                :required="question.isRequired"
+              >
+                <option value="" disabled>Select an option</option>
+                <option v-for="option in question.question.validationRules.options" :key="option" :value="option">
+                  {{ option }}
+                </option>
               </select>
-              <small v-if="teamOptionError" class="text-danger">
-                {{ teamOptionError }}
+
+              <!-- Fallback to TEXT input if type is not recognized or MCQ options are missing -->
+              <input
+                v-else
+                type="text"
+                class="form-control"
+                :id="`question-${currentParticipantIndex}-${qIndex}-fallback`"
+                :value="getParticipantResponse(question.id)"
+                @input="updateResponse(question.id, $event.target.value)"
+                :required="question.isRequired"
+                placeholder="Enter your answer"
+              />
+              
+              <small v-if="formErrors[currentParticipantIndex]?.[question.id]" class="text-danger">
+                {{ formErrors[currentParticipantIndex][question.id] }}
               </small>
             </div>
           </div>
-        </div>
 
-        <!-- Bottom operating buttons -->
-        <div class="d-flex justify-content-between mt-4">
-          <button class="btn btn-secondary" @click="goBackToPersonal">
-            Previous
-          </button>
-          <button class="btn btn-primary" type="submit">NEXT</button>
-        </div>
-      </form>
+          <div class="d-flex justify-content-between mt-4 mb-5">
+            <button type="button" class="btn btn-outline-secondary" @click="goBackToPersonalInfo">Back to Personal Info</button>
+            <button class="btn btn-primary" type="submit">
+              {{ isLastParticipant ? 'Next: Review' : 'Save & Next Participant' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTicketStore } from '@/store/ticketStore'
+import { useRegistrationStore } from '@/store/registrationStore'
 import StepIndicator from '@/components/StepIndicator.vue'
 import navbar from '@/components/Navbar.vue'
 
 const router = useRouter()
-const ticketStore = useTicketStore()
-const teamOptionError = ref('')
+const registrationStore = useRegistrationStore()
 
-// Steps completed on the current page (this page is Questionnaire, step index is 2)
-// Only switch to the corresponding page if the step index of the clicked step is less than currentStep.
-const currentStep = 2
+const currentParticipantIndex = ref(0)
+const formErrors = ref({}) // To store validation errors, e.g., formErrors[participantIndex][questionId]
 
-// Index of currently edited tickets
-const currentTicketIndex = ref(0)
-const currentTicket = computed(() => ticketStore.ticketList[currentTicketIndex.value])
-
-// Determine whether the questionnaire is complete (example: detect required fields)
-const isTicketComplete = (ticket) => {
-  const survey = ticket.survey || {}
-  return (
-    survey.emergencyContactName?.trim() &&
-    survey.emergencyContactPhone?.trim() &&
-    survey.hasMedicalCondition &&
-    survey.reason?.trim().length >= 10
-  )
-}
-
-const phonePattern = /^[0-9]{10,15}$/
-
-// Validate questionnaire information (includes global questionnaire and team options)
-const validateQuestionnaire = () => {
-  let valid = true
-
-  ticketStore.ticketList.forEach(ticket => {
-    ticket.survey = ticket.survey || {}
-    ticket.survey.errors = {}
-
-    if (!ticket.survey.emergencyContactName || ticket.survey.emergencyContactName.trim().length < 2) {
-      ticket.survey.errors.emergencyContactName =
-        'Emergency contact name is required and must be at least 2 characters'
-      valid = false
-    } else if (/^\d+$/.test(ticket.survey.emergencyContactName.trim())) {
-      ticket.survey.errors.emergencyContactName =
-        'Emergency contact name cannot consist solely of digits'
-      valid = false
-    }
-    if (!ticket.survey.emergencyContactPhone || !phonePattern.test(ticket.survey.emergencyContactPhone)) {
-      ticket.survey.errors.emergencyContactPhone =
-        'Emergency contact phone must be 10 to 15 digits'
-      valid = false
-    }
-    if (!ticket.survey.hasMedicalCondition) {
-      ticket.survey.errors.hasMedicalCondition = 'Please select your medical condition status'
-      valid = false
-    }
-    if (!ticket.survey.reason || ticket.survey.reason.trim().length < 10) {
-      ticket.survey.errors.reason =
-        'Please provide a reason for registering (at least 10 characters)'
-      valid = false
-    }
-  })
-
-  // Global Questionnaire Information Validation
-  ticketStore.eventSurvey.errors = {}
-  if (!ticketStore.eventSurvey.source || ticketStore.eventSurvey.source.trim().length < 3) {
-    ticketStore.eventSurvey.errors.source = 'Please specify how you heard about the event (at least 3 characters)'
-    valid = false
-  }
-
-  // Team Options Validation
-  if (!ticketStore.teamOption) {
-    teamOptionError.value = 'Please select a team option'
-    valid = false
-  } else {
-    teamOptionError.value = ''
-  }
-
-  return valid
-}
-
-const goToReview = () => {
-  if (validateQuestionnaire()) {
-    router.push({ name: 'Review' })
-  } else {
-    alert('Please fix the errors in the form before proceeding.')
-  }
-}
-
-const goBackToPersonal = () => {
-  router.push({ name: 'PersonalInfo' })
-}
-
-// Handling of step click events: jumps are only allowed if the clicked step index is less than currentStep
+// Define step index and route name mapping
 const stepRoutes = {
-  0: 'SelectCategory',
+  0: 'TicketSelection',
   1: 'PersonalInfo',
   2: 'Questionnaire',
-  3: 'Review',
+  3: 'ReviewRegistration',
   4: 'Checkout'
 }
 
-const handleStepClick = (stepIndex) => {
-  if (stepIndex < currentStep) {
-    const targetRoute = stepRoutes[stepIndex]
-    if (targetRoute) {
-      router.push({ name: targetRoute })
-    } else {
-      console.warn(`No route defined for step ${stepIndex}`)
-    }
+onMounted(() => {
+  if (!registrationStore.isEventLoaded || registrationStore.getParticipantCount === 0) {
+    router.push({ name: 'PersonalInfo' }); // Or TicketSelection if personal info also relies on it
+    return;
+  }
+  registrationStore.setCurrentStep(2); // This is the 'Questionnaire' step
+
+  // Initialize formErrors structure
+  registrationStore.participants.forEach((_, pIndex) => {
+    formErrors.value[pIndex] = {};
+  });
+})
+
+const eventQuestions = computed(() => registrationStore.eventDetails?.eventQuestions || [])
+
+const currentParticipant = computed(() => {
+  return registrationStore.participants[currentParticipantIndex.value]
+})
+
+const isLastParticipant = computed(() => {
+  return currentParticipantIndex.value === registrationStore.getParticipantCount - 1
+})
+
+const getParticipantResponse = (eventQuestionId) => {
+  const participant = currentParticipant.value;
+  if (participant && participant.responses) {
+    const response = participant.responses.find(r => r.eventQuestionId === eventQuestionId);
+    return response ? response.responseText : '';
+  }
+  return '';
+}
+
+const updateResponse = (eventQuestionId, value) => {
+  registrationStore.updateParticipantResponse(currentParticipantIndex.value, eventQuestionId, value);
+  // Clear specific error for this question on input
+  if (formErrors.value[currentParticipantIndex.value]?.[eventQuestionId]) {
+     delete formErrors.value[currentParticipantIndex.value][eventQuestionId];
   }
 }
+
+
+const handleStepClick = (clickedStepIndex) => {
+  if (clickedStepIndex < registrationStore.currentStep) {
+     if (validateCurrentParticipantQuestions()) { // Validate before navigating back
+        const routeName = stepRoutes[clickedStepIndex]
+        if (routeName) {
+            router.push({ name: routeName })
+        }
+     } else {
+        alert('Please ensure all required questions for the current participant are answered.');
+     }
+  }
+}
+
+const areParticipantQuestionsComplete = (participant) => {
+  if (!eventQuestions.value || eventQuestions.value.length === 0) return true; // No questions to complete
+  if (!participant || !participant.responses) return false;
+
+  return eventQuestions.value.every(q => {
+    if (!q.isRequired) return true;
+    const response = participant.responses.find(r => r.eventQuestionId === q.id);
+    return response && response.responseText?.trim() !== '';
+  });
+}
+
+const goBackToPersonalInfo = () => {
+  router.push({ name: 'PersonalInfo' })
+}
+
+const validateCurrentParticipantQuestions = () => {
+  let isValid = true;
+  const errors = {};
+  const participant = currentParticipant.value;
+
+  if (!participant || !eventQuestions.value) return true; // Should not happen if checks are in place
+
+  eventQuestions.value.forEach(question => {
+    if (question.isRequired) {
+      const response = participant.responses.find(r => r.eventQuestionId === question.id);
+      if (!response || !response.responseText?.trim()) {
+        errors[question.id] = `${question.question.questionText} is required.`;
+        isValid = false;
+      }
+    }
+  });
+  formErrors.value[currentParticipantIndex.value] = errors;
+  return isValid;
+}
+
+const validateAllParticipantsQuestions = () => {
+  let allValid = true;
+  for (let i = 0; i < registrationStore.getParticipantCount; i++) {
+    const participant = registrationStore.participants[i];
+    const errors = {};
+     eventQuestions.value.forEach(question => {
+        if (question.isRequired) {
+            const response = participant.responses.find(r => r.eventQuestionId === question.id);
+            if (!response || !response.responseText?.trim()) {
+                errors[question.id] = `${question.question.questionText} is required.`;
+                allValid = false;
+            }
+        }
+    });
+    formErrors.value[i] = errors;
+  }
+  return allValid;
+}
+
+const goToNextStep = () => {
+  if (!validateCurrentParticipantQuestions()) {
+    alert('Please answer all required questions for the current participant.');
+    return;
+  }
+
+  if (isLastParticipant.value) {
+    if (validateAllParticipantsQuestions()) {
+      registrationStore.setCurrentStep(3); // Move to 'Review'
+      router.push({ name: 'ReviewRegistration' });
+    } else {
+      alert('Please ensure all required questions for all participants are answered. Check tabs with "!" for errors.');
+      // Find the first participant with errors and switch to their tab
+      for (let i = 0; i < registrationStore.getParticipantCount; i++) {
+        if (Object.keys(formErrors.value[i] || {}).length > 0) {
+          currentParticipantIndex.value = i;
+          break;
+        }
+      }
+    }
+  } else {
+    currentParticipantIndex.value++;
+  }
+}
+
 </script>
 
 <style scoped>

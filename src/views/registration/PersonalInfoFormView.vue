@@ -1,131 +1,103 @@
-<template> 
-  <div> 
+<template>
+  <div>
     <navbar />
     <StepIndicator
-      :steps="['Select Ticket', 'Complete Info', 'Questionnaire', 'Review', 'Checkout']"
-      :currentStep="currentStep"
+      :steps="['Select Ticket', 'Personal Info', 'Questionnaire', 'Review', 'Checkout']"
+      :currentStep="registrationStore.currentStep"
       @step-clicked="handleStepClick"
     />
 
     <div class="container mt-4">
-      <h4 class="section-title">YOUR INFORMATION</h4>
-      
-      <!-- personalInfo wrapper added -->
-      <div class="personalInfo">
-        <!-- Ticket switch button area -->
+      <h4 class="section-title">PARTICIPANT INFORMATION</h4>
+
+      <div v-if="!registrationStore.isEventLoaded || registrationStore.getParticipantCount === 0" class="text-center">
+        <p>Please select tickets first.</p>
+        <router-link :to="{ name: 'TicketSelection' }" class="btn btn-secondary">Back to Ticket Selection</router-link>
+      </div>
+
+      <div v-else class="personalInfo">
+        <!-- Participant Tabs -->
         <div class="ticket-tabs mb-3">
           <button
-            v-for="(ticket, index) in ticketStore.ticketList"
-            :key="ticket.id || index"
-            @click="currentTicketIndex = index"
-            :class="['btn', currentTicketIndex === index ? 'btn-primary' : 'btn-outline-secondary', 'me-2']"
+            v-for="(_, index) in registrationStore.participants"
+            :key="index"
+            @click="currentParticipantIndex = index"
+            :class="['btn', currentParticipantIndex === index ? 'btn-primary' : 'btn-outline-secondary', 'me-2']"
           >
             Participant #{{ index + 1 }}
-            <span v-if="!isTicketComplete(ticket)" class="incomplete-badge">!</span>
+            <span v-if="!isParticipantInfoComplete(registrationStore.participants[index])" class="incomplete-badge">!</span>
           </button>
         </div>
-  
-        <form @submit.prevent="goToQuestionnaire">
-          <!-- Show only the currently selected ticket form -->
+
+        <form @submit.prevent="goToNextStep" v-if="currentParticipant">
           <div class="card custom-card">
             <h5 class="card-title">
-              Participant #{{ currentTicketIndex + 1 }} - {{ ticketTypeLabel(currentTicket.type) }}
+              Details for Participant #{{ currentParticipantIndex + 1 }}
             </h5>
-  
-            <!-- For adult tickets -->
-            <div v-if="currentTicket.type === 'adultWalk'">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Email</label>
-                  <input type="email" class="form-control" v-model="currentTicket.email" required />
-                  <small v-if="currentTicket.errors.email" class="text-danger">
-                    {{ currentTicket.errors.email }}
-                  </small>
-                </div>
-              </div>
-              <div class="row g-3 mt-3">
-                <div class="col-md-4">
-                  <label class="form-label">First Name</label>
-                  <input type="text" class="form-control" v-model="currentTicket.firstName" required />
-                  <small v-if="currentTicket.errors.firstName" class="text-danger">
-                    {{ currentTicket.errors.firstName }}
-                  </small>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Last Name</label>
-                  <input type="text" class="form-control" v-model="currentTicket.lastName" required />
-                  <small v-if="currentTicket.errors.lastName" class="text-danger">
-                    {{ currentTicket.errors.lastName }}
-                  </small>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Date of Birth</label>
-                  <input type="date" class="form-control" v-model="currentTicket.dateOfBirth" required />
-                  <small v-if="currentTicket.errors.dateOfBirth" class="text-danger">
-                    {{ currentTicket.errors.dateOfBirth }}
-                  </small>
-                </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" v-model="currentParticipant.email" required />
+                <!-- Basic validation example, can be expanded -->
+                <small v-if="formErrors[currentParticipantIndex]?.email" class="text-danger">
+                  {{ formErrors[currentParticipantIndex]?.email }}
+                </small>
               </div>
             </div>
-  
-            <!-- For children's tickets -->
-            <div v-else-if="currentTicket.type === 'childRun' || currentTicket.type === 'childWalk'">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Parent/Guardian Email</label>
-                  <input type="email" class="form-control" v-model="currentTicket.email" required />
-                  <small v-if="currentTicket.errors.email" class="text-danger">
-                    {{ currentTicket.errors.email }}
-                  </small>
-                </div>
-              </div>
-              <div class="row g-3 mt-3">
-                <div class="col-md-4">
-                  <label class="form-label">Child's First Name</label>
-                  <input type="text" class="form-control" v-model="currentTicket.firstName" required />
-                  <small v-if="currentTicket.errors.firstName" class="text-danger">
-                    {{ currentTicket.errors.firstName }}
-                  </small>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Child's Last Name</label>
-                  <input type="text" class="form-control" v-model="currentTicket.lastName" required />
-                  <small v-if="currentTicket.errors.lastName" class="text-danger">
-                    {{ currentTicket.errors.lastName }}
-                  </small>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Date of Birth</label>
-                  <input type="date" class="form-control" v-model="currentTicket.dateOfBirth" required />
-                  <small v-if="currentTicket.errors.dateOfBirth" class="text-danger">
-                    {{ currentTicket.errors.dateOfBirth }}
-                  </small>
-                </div>
-              </div>
-              <div class="row g-3 mt-3">
-                <div class="col-md-12">
-                  <label class="form-label">Child ticket certificate (upload document)</label>
-                  <input type="file" class="form-control" @change="handleFileUpload($event, currentTicketIndex)" required />
-                  <div v-if="currentTicket.proof" class="upload-status">
-                    Uploaded: {{ currentTicket.proof.name }}
-                  </div>
-                </div>
-              </div>
-            </div>
-  
-            <!-- Public information: phone, country, address, etc. -->
             <div class="row g-3 mt-3">
               <div class="col-md-6">
-                <label class="form-label">Phone</label>
-                <input type="tel" class="form-control" v-model="currentTicket.phoneNumber" required />
-                <small v-if="currentTicket.errors.phoneNumber" class="text-danger">
-                  {{ currentTicket.errors.phoneNumber }}
+                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="currentParticipant.firstName" required />
+                <small v-if="formErrors[currentParticipantIndex]?.firstName" class="text-danger">
+                  {{ formErrors[currentParticipantIndex]?.firstName }}
                 </small>
               </div>
               <div class="col-md-6">
+                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="currentParticipant.lastName" required />
+                <small v-if="formErrors[currentParticipantIndex]?.lastName" class="text-danger">
+                  {{ formErrors[currentParticipantIndex]?.lastName }}
+                </small>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+              <div class="col-md-6">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" v-model="currentParticipant.phoneNumber" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" class="form-control" v-model="currentParticipant.dateOfBirth" />
+              </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+              <div class="col-md-12">
+                <label class="form-label">Address</label>
+                <input type="text" class="form-control" placeholder="Street Address" v-model="currentParticipant.address" />
+              </div>
+            </div>
+            <div class="row g-3 mt-1">
+              <div class="col-md-4">
+                <label class="form-label">City</label>
+                <input type="text" class="form-control" v-model="currentParticipant.city" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">State/Province</label>
+                <input type="text" class="form-control" v-model="currentParticipant.state" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Zip/Postal Code</label>
+                <input type="text" class="form-control" v-model="currentParticipant.zipCode" />
+              </div>
+            </div>
+             <div class="row g-3 mt-1">
+              <div class="col-md-6">
                 <label class="form-label">Country</label>
-                <select class="form-select" v-model="currentTicket.country" required>
-                  <option value="" disabled>Please select</option>
+                <select class="form-select" v-model="currentParticipant.country">
+                  <option value="">Select Country (Optional)</option>
                   <option>United States</option>
                   <option>Australia</option>
                   <option>United Kingdom</option>
@@ -135,33 +107,13 @@
                 </select>
               </div>
             </div>
-            <div class="row g-3 mt-3">
-              <div class="col-md-12">
-                <label class="form-label">Address</label>
-                <input type="text" class="form-control" placeholder="Street Address" v-model="currentTicket.address" required />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">City</label>
-                <input type="text" class="form-control" v-model="currentTicket.city" required />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">State</label>
-                <input type="text" class="form-control" v-model="currentTicket.state" required />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Zip Code</label>
-                <input type="text" class="form-control" v-model="currentTicket.zipCode" required />
-                <small v-if="currentTicket.errors.zipCode" class="text-danger">
-                  {{ currentTicket.errors.zipCode }}
-                </small>
-              </div>
-            </div>
           </div>
-  
-          <!-- Bottom buttons -->
-          <div class="d-flex justify-content-between mt-4">
-            <button class="btn btn-outline-danger" @click="goBack">Start Over</button>
-            <button class="btn btn-primary" type="submit">NEXT</button>
+
+          <div class="d-flex justify-content-between mt-4 mb-5">
+            <button type="button" class="btn btn-outline-secondary" @click="goBackToTicketSelection">Back to Tickets</button>
+            <button class="btn btn-primary" type="submit">
+              {{ isLastParticipant ? 'Next: Questionnaire' : 'Save & Next Participant' }}
+            </button>
           </div>
         </form>
       </div>
@@ -170,149 +122,168 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTicketStore } from '@/store/ticketStore'
+import { useRegistrationStore } from '@/store/registrationStore'
 import StepIndicator from '@/components/StepIndicator.vue'
 import navbar from '@/components/Navbar.vue'
 
 const router = useRouter()
-const ticketStore = useTicketStore()
+const registrationStore = useRegistrationStore()
 
-// Steps completed on the current page (this page is a Complete Info page, step index is 1)
-const currentStep = 1
+const currentParticipantIndex = ref(0)
+// Reactive errors object, keys are participant indices
+const formErrors = ref({})
 
-// Define step index and route name mapping, please adjust according to the actual project routing configuration
+
+// Define step index and route name mapping
 const stepRoutes = {
-  0: 'SelectCategory',
-  1: 'CompleteInfo',    
+  0: 'TicketSelection',
+  1: 'PersonalInfo',
   2: 'Questionnaire',
-  3: 'Review',
+  3: 'ReviewRegistration', // Updated name
   4: 'Checkout'
 }
 
-// Step Indicator Click Handler Function
-const handleStepClick = (clickedStep) => {
-  if (clickedStep < currentStep) {
-    const routeName = stepRoutes[clickedStep]
-    if (routeName) {
-      router.push({ name: routeName })
+onMounted(() => {
+  if (!registrationStore.isEventLoaded || registrationStore.getParticipantCount === 0) {
+    // If no participants (e.g. user navigated directly or refreshed), redirect to ticket selection
+    router.push({ name: 'TicketSelection' });
+    return;
+  }
+  registrationStore.setCurrentStep(1); // This is the 'Personal Info' step
+
+  // Initialize errors for all participants
+  registrationStore.participants.forEach((_, index) => {
+    formErrors.value[index] = {};
+  });
+})
+
+const currentParticipant = computed(() => {
+  return registrationStore.participants[currentParticipantIndex.value]
+})
+
+const isLastParticipant = computed(() => {
+  return currentParticipantIndex.value === registrationStore.getParticipantCount - 1
+})
+
+// The deep watch on currentParticipant was likely causing recursive updates
+// because v-model on currentParticipant.email (etc.) mutates the object in the store,
+// which then causes the computed currentParticipant to update, re-triggering the watch.
+
+// Pinia's state is reactive, so v-model should update the store directly.
+
+// The registrationStore.updateParticipantInfo action might also contribute if it replaces
+// the object instance in a way that the watcher sees as a new change.
+
+// Removing this watcher as v-model should suffice for updating the reactive store object.
+
+// watch(currentParticipant, (newData) => {
+//  if (newData) {
+//    registrationStore.updateParticipantInfo(currentParticipantIndex.value, newData)
+//  }
+// }, { deep: true })
+
+
+const handleStepClick = (clickedStepIndex) => {
+  if (clickedStepIndex < registrationStore.currentStep) {
+    // Before navigating back, ensure current form is valid or prompt user
+    if (validateCurrentParticipantForm()) {
+      const routeName = stepRoutes[clickedStepIndex]
+      if (routeName) {
+        router.push({ name: routeName })
+      }
     } else {
-      console.warn(`未找到步骤 ${clickedStep} 对应的路由名称`)
+      alert('Please correct the errors on the current participant form before navigating.')
     }
   }
 }
 
-const currentTicketIndex = ref(0)
-const currentTicket = computed(() => ticketStore.ticketList[currentTicketIndex.value])
-
-const isTicketComplete = (ticket) => {
-  return (
-    ticket.email?.trim() &&
-    ticket.firstName?.trim() &&
-    ticket.lastName?.trim() &&
-    ticket.dateOfBirth &&
-    ticket.phoneNumber?.trim() &&
-    ticket.zipCode?.trim()
-  )
+const isParticipantInfoComplete = (participant) => {
+  // Basic check for required fields for the badge
+  return participant && participant.email?.trim() && participant.firstName?.trim() && participant.lastName?.trim();
 }
 
-const handleFileUpload = (event, index) => {
-  const file = event.target.files[0]
-  ticketStore.ticketList[index].proof = file
+const goBackToTicketSelection = () => {
+  router.push({ name: 'TicketSelection' })
 }
 
-const goBack = () => {
-  router.push({ name: 'SelectCategory' })
+const validateCurrentParticipantForm = () => {
+  let isValid = true;
+  const errors = {};
+  const participant = currentParticipant.value;
+
+  if (!participant.email?.trim()) {
+    errors.email = 'Email is required.';
+    isValid = false;
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(participant.email.trim())) {
+    errors.email = 'Invalid email format.';
+    isValid = false;
+  }
+
+  if (!participant.firstName?.trim()) {
+    errors.firstName = 'First name is required.';
+    isValid = false;
+  }
+  if (!participant.lastName?.trim()) {
+    errors.lastName = 'Last name is required.';
+    isValid = false;
+  }
+  // Add more validation as needed for other fields (phone, DOB, address parts)
+
+  formErrors.value[currentParticipantIndex.value] = errors;
+  return isValid;
 }
 
-const validateForm = () => {
-  let isValid = true
-  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  const zipPattern = /^[0-9]{5}$/
-  const phonePattern = /^[0-9]{10,15}$/
+const validateAllParticipantForms = () => {
+  let allValid = true;
+  for (let i = 0; i < registrationStore.getParticipantCount; i++) {
+    // Temporarily switch to validate each form (or adapt validateCurrentParticipantForm)
+    const participantToValidate = registrationStore.participants[i];
+    const errors = {};
+    if (!participantToValidate.email?.trim()) {
+        errors.email = 'Email is required.'; allValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(participantToValidate.email.trim())) {
+        errors.email = 'Invalid email format.'; allValid = false;
+    }
+    if (!participantToValidate.firstName?.trim()) {
+        errors.firstName = 'First name is required.'; allValid = false;
+    }
+    if (!participantToValidate.lastName?.trim()) {
+        errors.lastName = 'Last name is required.'; allValid = false;
+    }
+    formErrors.value[i] = errors; // Store errors for display if needed
+  }
+  return allValid;
+}
 
-  ticketStore.ticketList.forEach(ticket => {
-    ticket.errors = {}
 
-    if (!emailPattern.test(ticket.email)) {
-      ticket.errors.email = 'Incorrect mailbox format'
-      isValid = false
-    }
-    
-    if (!ticket.firstName.trim()) {
-      ticket.errors.firstName = 'First name cannot be empty'
-      isValid = false
-    } else if (/^\d+$/.test(ticket.firstName.trim())) {
-      ticket.errors.firstName = 'First name cannot consist solely of digits'
-      isValid = false
-    }
-    
-    if (!ticket.lastName.trim()) {
-      ticket.errors.lastName = 'Last name cannot be empty'
-      isValid = false
-    } else if (/^\d+$/.test(ticket.lastName.trim())) {
-      ticket.errors.lastName = 'Last name cannot consist solely of digits'
-      isValid = false
-    }
-    if (!phonePattern.test(ticket.phoneNumber)) {
-      ticket.errors.phoneNumber = 'Phone number must be 10 to 15 digits'
-      isValid = false
-    }
-    if (!zipPattern.test(ticket.zipCode)) {
-      ticket.errors.zipCode = 'Zip Code must be 5 digits'
-      isValid = false
-    }
-    if (!ticket.dateOfBirth) {
-      ticket.errors.dateOfBirth = 'Date of birth cannot be empty'
-      isValid = false
+const goToNextStep = () => {
+  if (!validateCurrentParticipantForm()) {
+    alert('Please correct the errors for the current participant.');
+    return;
+  }
+
+  if (isLastParticipant.value) {
+    // Before proceeding to questionnaire, validate ALL participant forms
+    if (validateAllParticipantForms()) {
+      registrationStore.setCurrentStep(2); // Move to 'Questionnaire'
+      router.push({ name: 'Questionnaire' });
     } else {
-      const dob = new Date(ticket.dateOfBirth)
-      const today = new Date()
-      if (dob >= today) {
-        ticket.errors.dateOfBirth = 'Date of birth must be before today'
-        isValid = false
-      } else {
-        const age = Math.floor((today - dob) / (365.25 * 24 * 3600 * 1000))
-        if (age < 1 || age > 120) {
-          ticket.errors.dateOfBirth = 'Please enter a valid age (1-120 years)'
-          isValid = false
-        }
-        if (ticket.type === 'adultWalk' && age < 14) {
-          ticket.errors.dateOfBirth = 'Adult tickets require 14 years or older'
-          isValid = false
-        }
-        if ((ticket.type === 'childRun' || ticket.type === 'childWalk') && age >= 14) {
-          ticket.errors.dateOfBirth = 'Child tickets require age below 14 years'
-          isValid = false
+      alert('Please ensure all participant forms are correctly filled out. Check tabs with "!" for errors.');
+      // Find the first participant with errors and switch to their tab
+      for (let i = 0; i < registrationStore.getParticipantCount; i++) {
+        if (Object.keys(formErrors.value[i] || {}).length > 0) {
+          currentParticipantIndex.value = i;
+          break;
         }
       }
     }
-  })
-
-  return isValid
-}
-
-const goToQuestionnaire = () => {
-  if (validateForm()) {
-    router.push({ name: 'Questionnaire' })
   } else {
-    alert('Please fix the errors in all participant forms before submitting.')
+    currentParticipantIndex.value++;
   }
 }
 
-const ticketTypeLabel = (type) => {
-  switch (type) {
-    case 'adultWalk':
-      return '2.5KM WALK Adult Ticket'
-    case 'childRun':
-      return "5KM RUN Children's Ticket"
-    case 'childWalk':
-      return "2.5KM WALK Children's Ticket"
-    default:
-      return 'Unknown ticket type'
-  }
-}
 </script>
 
 <style scoped>

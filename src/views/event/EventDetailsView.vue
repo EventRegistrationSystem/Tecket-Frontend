@@ -48,11 +48,10 @@
             </div>
           </div>
           <div class="align-item-center mt-5">
-            <router-link to="/ticket-selection">
-              <button class="btn btn-outline-warning fw-semibold">
-                Register now
-              </button>
-            </router-link>
+            <button class="btn btn-outline-warning fw-semibold" 
+            @click="startRegistration">
+              Register now
+            </button>
           </div>
           <div class="align-item-center mt-3">
             <router-link to="/events">
@@ -70,20 +69,24 @@
 <script setup>
 import navbar from '@/components/Navbar.vue'
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { useUserStore } from '@/store/userStore'
+import { useRoute, useRouter } from 'vue-router'
+// import { useUserStore } from '@/store/userStore' 
+import { useRegistrationStore } from '@/store/registrationStore'
+import { fetchEventDetails } from '@/api/eventServices'
 
 const route = useRoute()
+const router = useRouter()
+const registrationStore = useRegistrationStore()
 const eventId = route.params.id
 
-const eventDetail = ref({})
+const eventDetail = ref(null) // Initialize as null
 const loading = ref(true)
 const error = ref(null)
 const defaultBanner = 'https://via.placeholder.com/800x400?text=Event+Banner'
 
 // Generate a map URL based on location
 const mapUrl = computed(() => {
-  if (eventDetail.value.location) {
+  if (eventDetail.value && eventDetail.value.location) {
     const encoded = encodeURIComponent(eventDetail.value.location)
     return `https://maps.google.com/maps?q=${encoded}&t=&z=13&ie=UTF8&iwloc=&output=embed`
   }
@@ -96,28 +99,36 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleString()
 }
 
+const startRegistration = () => {
+  if (eventDetail.value) {
+    registrationStore.resetRegistrationState() // Clear any previous registration state
+    registrationStore.setEvent(eventDetail.value)
+    registrationStore.setCurrentStep(0) // Start at ticket selection
+    router.push({ name: 'TicketSelection' }) // Ensure this route name matches your router config
+  } else {
+    console.error("Event details not loaded, cannot start registration.")
+    // Optionally, display an error to the user
+  }
+}
+
 onMounted(async () => {
+  loading.value = true
+  error.value = null
   try {
-    const userStore = useUserStore()
-    // Prioritize getting tokens from the store
-    const token = userStore.accessToken || localStorage.getItem("accessToken")
-    const res = await fetch(import.meta.env.VITE_API_BASE_URL + `/events/${eventId}`, {
-      headers: token
-        ? {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        : { "Content-Type": "application/json" }
-    })
-    if (!res.ok) {
-      throw new Error(`Request failed with status code：${res.status}`)
+    // No explicit token needed if fetchEventDetails uses httpClient which handles auth for other requests
+    // and this endpoint is public or optionally authenticated.
+    const response = await fetchEventDetails(eventId) 
+    eventDetail.value = response 
+    // Assuming fetchEventDetails returns the event object directly (it returns response.data.data as per eventServices.js)
+    console.log('Event Details Loaded in View:', JSON.parse(JSON.stringify(eventDetail.value))); // Log a deep copy
+    if (eventDetail.value && eventDetail.value.eventQuestions) {
+      console.log('Event Questions in View:', JSON.parse(JSON.stringify(eventDetail.value.eventQuestions)));
+    } else {
+      console.log('No Event Questions found in eventDetail.value in View');
     }
-    const json = await res.json()
-    // { success: true, data: { ... } }
-    eventDetail.value = json.data
   } catch (err) {
     console.error("Get Event Details Error：", err)
-    error.value = err.message || 'make a mistake'
+    error.value = err.message || 'Failed to load event details.'
   } finally {
     loading.value = false
   }
