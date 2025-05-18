@@ -1,30 +1,20 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from '@/store/userStore'; 
 
-import HomeView from "@/views/HomeView.vue";
-import UserManagementView from "@/views/user/userManagementView.vue";
-import userEventView from "@/views/user/userEventView.vue";
-import EventListView from "@/views/event/EventListView.vue";
-import SignIn from "@/views/auth/SignInView.vue";
-import SignUp from "@/views/auth/SignUpView.vue";
+// Static imports for view components will be removed or converted to dynamic imports.
 
-import TicketSelection from "@/views/registration/TicketSelectionFormView.vue";
-import Questionnaire from "@/views/registration/QuestionnaireFormView.vue";
-import Review from "@/views/registration/ReviewFormView.vue";
-import Checkout from "@/views/registration/CheckoutView.vue";
-import UserProfileView from "@/views/user/UserProfileView.vue";
 const routes = [
-  { path: "/", name: "Home", component: HomeView },
+  { path: "/", name: "Home", component: () => import("@/views/HomeView.vue") },
 
   // Authentication views
-  { path: "/signIn", name: "SignIn", component: SignIn },
-  { path: "/signUp", name: "SignUp", component: SignUp },
+  { path: "/signIn", name: "SignIn", component: () => import("@/views/auth/SignInView.vue") },
+  { path: "/signUp", name: "SignUp", component: () => import("@/views/auth/SignUpView.vue") },
   
   // Public event routes
   { 
     path: "/events",
     name: "EventList", 
-    component: EventListView 
+    component: () => import("@/views/event/EventListView.vue") 
   },
   {
     path: "/eventDetail/:id",
@@ -40,7 +30,7 @@ const routes = [
   {
     path: "/register/tickets", // linked from EventDetail
     name: "TicketSelection", // Used in EventDetailsView.vue and TicketSelectionFormView.vue
-    component: TicketSelection,
+    component: () => import("@/views/registration/TicketSelectionFormView.vue"),
     // meta: { requiresAuth: false } // Can be initiated by guest or logged-in user
   },
   {
@@ -52,31 +42,31 @@ const routes = [
   {
     path: "/register/questions", 
     name: "Questionnaire", // Used in PersonalInfoFormView.vue (presumably)
-    component: Questionnaire,
+    component: () => import("@/views/registration/QuestionnaireFormView.vue"),
     // meta: { requiresAuth: false }
   },
   {
     path: "/register/review",
     name: "ReviewRegistration", // used in QuestionnaireFormView.vue (presumably)
-    component: Review,
+    component: () => import("@/views/registration/ReviewFormView.vue"),
     // meta: { requiresAuth: false }
   },
   {
     path: "/register/checkout", 
     name: "Checkout", // Used in ReviewFormView.vue (conditionally)
-    component: Checkout,
+    component: () => import("@/views/registration/CheckoutView.vue"),
     // meta: { requiresAuth: false }
   },
   {
     path: "/registration/success",
     name: "RegistrationSuccess",
-    component: () => import("@/views/registration/RegistrationSuccessView.vue"), // Placeholder
+    component: () => import("@/views/registration/RegistrationSuccessView.vue"), 
     // meta: { requiresAuth: false }
   },
   {
     path: "/registration/pending-payment",
     name: "RegistrationPendingPayment",
-    component: () => import("@/views/registration/RegistrationPendingPaymentView.vue"), // Placeholder
+    component: () => import("@/views/registration/RegistrationPendingPaymentView.vue"), 
     // meta: { requiresAuth: false }
   },
 
@@ -143,39 +133,20 @@ const routes = [
 
   // -- Ticket Management Routes (Admin) --
   {
-    path: "/admin/tickets", // General view of tickets, might be event-specific
-    name: "AdminTicketsView",  
-    component: () => import("@/views/admin/Tickets/TicketsList.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-  {
     path: "/admin/events/:eventId/tickets", // Tickets for a specific event
-    name: "AdminEventTicketsManagement",  
+    name: "AdminEventTickets",  
     component: () => import("@/views/admin/Tickets/TicketsManagement.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
   {
-    path: "/admin/tickets/users/:id", // This path seems ambiguous, is it user's tickets or ticket's users?
-    name: "AdminTicketUserDetail",  
-    component: () => import("@/views/admin/Tickets/TicketUserDetail.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-  {
-    path: "/admin/tickets/participants/:id", // Ambiguous, participants of which ticket/event?
-    name: "AdminParticipantsDetail",  
-    component: () =>
-      import("@/views/admin/Tickets/TicketsParticipantsDetail.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-  {
     path: "/admin/events/:eventId/tickets/create",
-    name: "AdminTicketTypeCreate",  
+    name: "AdminEventTicketCreate",  
     component: () => import("@/views/admin/Tickets/TicketTypeCreate.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
   {
     path: "/admin/events/:eventId/tickets/edit/:ticketId", // Corrected path for clarity
-    name: "AdminTicketTypeEdit",  
+    name: "AdminEventTicketEdit",  
     component: () => import("@/views/admin/Tickets/TicketTypeEdit.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
@@ -200,19 +171,19 @@ const routes = [
   { 
     path: "/user/profile", 
     name: "UserProfile", 
-    component: UserProfileView, 
+    component: () => import("@/views/user/UserProfileView.vue"), 
     meta: { requiresAuth: true } 
   },
   {
     path: "/user/management", // This might be same as profile or for specific user settings
     name: "UserManagement",  
-    component: UserManagementView,
+    component: () => import("@/views/user/userManagementView.vue"),
     meta: { requiresAuth: true }
   },
   {
     path: "/user/events",
     name: "UserEvents", // Registered events, etc.
-    component: userEventView,
+    component: () => import("@/views/user/userEventView.vue"),
     meta: { requiresAuth: true }
   },
 ];
