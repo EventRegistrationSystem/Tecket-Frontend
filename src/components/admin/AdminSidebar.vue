@@ -18,6 +18,8 @@ const activeItem = computed(() => {
     return "events";
   else if (currentPath.startsWith("/admin/users")) 
     return "users";
+  else if (currentPath.startsWith("/admin/registrations")) 
+    return "registrations";
   return "dashboard";
 });
 
@@ -39,6 +41,12 @@ const menuItems = [
     label: "Users", 
     icon: "pi pi-users", 
     route: "/admin/users" 
+  },
+  { 
+    id: "registrations", 
+    label: "Registrations", 
+    icon: "pi pi-users", 
+    route: "/admin/registrations" 
   }
 ];
 
