@@ -30,33 +30,54 @@ const routes = [
     path: "/eventDetail/:id",
     name: "EventDetail",
     component: () => import("@/views/event/EventDetailsView.vue"),
+    // meta: { requiresAuth: true } // Publicly viewable, registration handles auth
   },
 
-  // Registraiton routes
+  // Registration routes
+  // Note: These routes should ideally be protected or managed by a flow guard
+  // to prevent direct access to later steps without completing earlier ones.
+  // This can be handled by checking registrationStore.currentStep or similar.
   {
-    path: "/ticket-selection",
-    name: "TicketSelection",
+    path: "/register/tickets", // linked from EventDetail
+    name: "TicketSelection", // Used in EventDetailsView.vue and TicketSelectionFormView.vue
     component: TicketSelection,
+    // meta: { requiresAuth: false } // Can be initiated by guest or logged-in user
   },
   {
-    path: "/personalInfo",
-    name: "PersonalInfo",
+    path: "/register/info", 
+    name: "PersonalInfo", // Used in TicketSelectionFormView.vue
     component: () => import("@/views/registration/PersonalInfoFormView.vue"),
+    // meta: { requiresAuth: false }
   },
   {
-    path: "/complete-form/questionnaire",
-    name: "Questionnaire",
+    path: "/register/questions", 
+    name: "Questionnaire", // Used in PersonalInfoFormView.vue (presumably)
     component: Questionnaire,
+    // meta: { requiresAuth: false }
   },
   {
-    path: "/complete-form/review",
-    name: "Review",
+    path: "/register/review",
+    name: "ReviewRegistration", // used in QuestionnaireFormView.vue (presumably)
     component: Review,
+    // meta: { requiresAuth: false }
   },
   {
-    path: "/checkout",
-    name: "Checkout",
+    path: "/register/checkout", 
+    name: "Checkout", // Used in ReviewFormView.vue (conditionally)
     component: Checkout,
+    // meta: { requiresAuth: false }
+  },
+  {
+    path: "/registration/success",
+    name: "RegistrationSuccess",
+    component: () => import("@/views/registration/RegistrationSuccessView.vue"), // Placeholder
+    // meta: { requiresAuth: false }
+  },
+  {
+    path: "/registration/pending-payment",
+    name: "RegistrationPendingPayment",
+    component: () => import("@/views/registration/RegistrationPendingPaymentView.vue"), // Placeholder
+    // meta: { requiresAuth: false }
   },
 
   // Admin routes
