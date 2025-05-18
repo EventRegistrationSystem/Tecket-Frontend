@@ -3,7 +3,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import { fetchTicketTypes, updateTicketType, deleteTicketType } from '@/api/atickets.js'
+import { fetchTicketTypes, updateTicketType } from '@/api/atickets.js'
 
 const route  = useRoute()
 const router = useRouter()

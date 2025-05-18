@@ -1,30 +1,23 @@
-<!-- src/views/admin/DashboardView.vue -->
 <script setup>
 import { ref, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { eventsMockData } from '@/mock/eventsMock.js'
 import { usersMockData } from '@/mock/usersMock.js'
-// 从单独的文件引入统计数据
 import { dashboardStatsMockData } from '@/mock/dashboardStatsMock.js'
 
-// 统计卡数据，直接使用引入的 mock 数据
 const statsData = ref([...dashboardStatsMockData])
-
-// 使用 eventsMockData 中的数据，取前 5 个
 const recentEvents = ref(eventsMockData.slice(0, 5))
 
-// 使用 usersMockData 中的数据，取前 5 个并转换字段格式
 const recentUsers = ref(
   usersMockData.slice(0, 5).map(user => ({
     id: user.id,
     name: user.first_name + ' ' + user.last_name,
     email: user.email,
     registeredDate: user.created_at,
-    eventsAttended: 0   // 此字段未在 mock 数据中提供，默认设置为 0
+    eventsAttended: 0   
   }))
 )
 
-// 图表数据
 const salesChartData = ref(null)
 const salesChartOptions = ref({
   responsive: true,
@@ -135,7 +128,7 @@ const formatDate = (dateString) => {
           <div class="bg-white rounded shadow-sm p-3">
             <h2 class="fs-5 fw-semibold text-dark mb-3">Ticket Sales Overview</h2>
             <div style="height: 20rem;">
-              <Chart v-if="salesChartData" type="line" :data="salesChartData" :options="salesChartOptions" />
+              <!-- <Chart v-if="salesChartData" type="line" :data="salesChartData" :options="salesChartOptions" /> -->
             </div>
           </div>
         </div>
@@ -217,49 +210,6 @@ const formatDate = (dateString) => {
           </div>
         </div>
       </div>
-      
-      <!-- Quick Actions Row -->
-      <div class="bg-white rounded shadow-sm p-3">
-        <h2 class="fs-5 fw-semibold text-dark mb-3">Quick Actions</h2>
-        <div class="row g-4">
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle mb-2">
-                <i class="pi pi-calendar-plus fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">Create Event</p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle mb-2">
-                <i class="pi pi-user-plus fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">Add User</p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle mb-2">
-                <i class="pi pi-ticket fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">Manage Tickets</p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6 col-lg-3">
-            <div class="d-flex flex-column align-items-center justify-content-center p-3 border rounded" style="cursor: pointer;">
-              <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle mb-2">
-                <i class="pi pi-chart-line fs-4"></i>
-              </div>
-              <p class="text-dark fw-normal">View Reports</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style="background-color: #f0f0f0; padding: 20px; display: flex;">
-      Test with direct styles
     </div>
   </AdminLayout>
 </template>

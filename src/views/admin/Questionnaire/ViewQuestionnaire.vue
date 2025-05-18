@@ -7,17 +7,17 @@ import { questionsMockData } from '@/mock/questionsMockData.js'
 import { usersMockData } from '@/mock/usersMock.js'
 import { eventsMockData } from '@/mock/eventsMock.js'
 
-// 获取路由与当前活动 eventId（路由参数应设置为 eventId）
+// Get the route and current eventId (the route parameter should be set to eventId)
 const route = useRoute()
 const router = useRouter()
 const eventId = parseInt(route.params.eventId)
 
-// 当前活动数据及加载状态
+// Current activity data and loading status
 const event = ref(null)
 const loading = ref(true)
 
 onMounted(() => {
-  // 模拟 API 调用加载当前活动详情
+  // Simulate API call to load current activity details
   setTimeout(() => {
     const foundEvent = eventsMockData.find(e => e.id === eventId)
     if (foundEvent) {
@@ -45,61 +45,59 @@ onMounted(() => {
   }, 500)
 })
 
-// Tabs 状态，默认显示 Registration Questions Tab
+// Tabs state, the default display is Registration Questions Tab
 const activeTab = ref('questionnaire')
 
-// ===== Registration Questions (问卷) 相关 =====
+// ===== Registration Questions (Questionnaire) Related =====
 const questions = ref([])
 
-// 添加问题：初始问题对象包含文本、题型、选项及其他设置
+// Add question: The initial question object contains text, question type, options and other settings
 const addQuestion = () => {
   const newQuestion = {
     id: Date.now(),
     text: '',
-    type: 'text', // 默认题型为 text
-    options: [''], // 当题型为 select/radio/checkbox 时使用
+    type: 'text', // The default question type is text
+    options: [''], // Used when the question type is select/radio/checkbox
     required: false,
     hasMaxLength: false
   }
   questions.value.push(newQuestion)
 }
 
-// 删除问题
+// Delete the question
 const removeQuestion = (index) => {
   questions.value.splice(index, 1)
 }
 
-// 添加选项
+// Add options
 const addOption = (question) => {
   question.options.push('')
 }
 
-// 删除选项
+// Delete options
 const removeOption = (question, optionIndex) => {
   if (question.options.length > 1) {
     question.options.splice(optionIndex, 1)
   }
 }
 
-// 以下是新增的变量与方法，确保提交按钮能正常工作
-
-// 用于指示保存状态
+// Used to indicate the save status
 const saving = ref(false)
-// 用于标识当前模式，默认为创建模式
+// Used to identify the current mode, the default is create mode
 const isEditMode = ref(false)
-// 简单的表单校验函数，你可以根据需要扩展校验逻辑
+// Simple form validation function, you can extend the validation logic as needed
 const validateForm = () => {
-  // 例如可以校验每个问题是否有文本等
+  // For example, you can check whether each question has text, etc.
   return true
 }
 
-// 保存操作，将保存当前数据（此处以 questions 为例，可根据实际需求调整）
+// Save operation, which will save the current data (here we take questions as an example, which can be adjusted according to actual needs)
 const saveEvent = () => {
   if (!validateForm()) {
     return
   }
   saving.value = true
-  // 模拟 API 保存调用（你可以将保存数据改为实际的 API 调用）
+  // Simulate an API save call (you can change saving data to an actual API call)
   setTimeout(() => {
     console.log('Questions saved:', questions.value)
     saving.value = false
@@ -107,12 +105,12 @@ const saveEvent = () => {
   }, 1000)
 }
 
-// 取消操作
+// Cancel the operation
 const cancelForm = () => {
   router.push('/admin/questionnaire')
 }
 
-// ===== Questionnaire Completers (问卷完成者) 相关 =====
+// ===== Questionnaire Completers related =====
 const completersSearchQuery = ref('')
 const questionnaireCompleters = computed(() => {
   return usersMockData.filter(user => {
@@ -128,7 +126,7 @@ const viewCompletionDetails = (userId) => {
   router.push(`/admin/questionnaire/completion/${userId}`)
 }
 
-// 格式化日期函数
+// Function to format date
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -141,22 +139,22 @@ const formatDate = (dateString) => {
 <template>
   <AdminLayout>
     <div class="p-3">
-      <!-- Loading 状态 -->
+      <!-- Loading Status -->
       <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height: 16rem;">
         <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
-      <!-- 主内容 -->
+      <!-- Main content -->
       <div v-else>
-        <!-- 返回按钮 -->
+        <!-- Back button -->
         <button @click="router.push('/admin/questionnaire')" class="btn btn-link text-primary mb-3" title="Back">
           <i class="pi pi-arrow-left"></i>
           Back to Questionnaire
         </button>
 
-        <!-- 当前活动基本信息 -->
+        <!-- Basic information of current activity -->
         <div class="mb-4">
           <h1 class="fs-2 fw-bold text-dark">{{ event.name }}</h1>
           <div class="d-flex align-items-center">
@@ -173,7 +171,7 @@ const formatDate = (dateString) => {
           </div>
         </div>
 
-        <!-- Tabs 导航 -->
+        <!-- Tabs navigation -->
         <div class="bg-white rounded shadow-sm overflow-hidden mb-4">
           <div class="d-flex border-bottom">
             <button @click="activeTab = 'questionnaire'" type="button"
@@ -189,7 +187,7 @@ const formatDate = (dateString) => {
           </div>
         </div>
 
-        <!-- Tabs 内容 -->
+        <!-- Tabs content -->
         <div class="bg-white rounded shadow-sm p-4">
           <!-- Questionnaire Tab -->
           <div v-if="activeTab === 'questionnaire'" class="mb-4">
@@ -298,7 +296,7 @@ const formatDate = (dateString) => {
           <!-- Form Actions -->
           <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3">
             <button @click="cancelForm" type="button" class="btn btn-outline-secondary">Cancel</button>
-            <!-- 此处修改为 type="button" 并绑定 @click 事件 -->
+            <!-- Change here to type="button" and bind @click event -->
             <button @click="saveEvent" type="button" class="btn btn-primary d-flex align-items-center" :disabled="saving">
               <span v-if="!saving">{{ isEditMode ? 'Update questionnaire' : 'Create questionnaire' }}</span>
               <span v-else class="d-flex align-items-center">
@@ -312,7 +310,7 @@ const formatDate = (dateString) => {
           <!-- Questionnaire Completers Tab -->
           <div v-if="activeTab === 'completers'">
             <h2 class="fs-5 fw-semibold text-dark mb-3">Questionnaire Completers</h2>
-            <!-- 搜索控件 -->
+            <!-- Search Control -->
             <div class="d-flex justify-content-start align-items-center mb-3">
               <input v-model="completersSearchQuery" type="text" class="form-control" placeholder="Search completers..." style="max-width:300px;" />
             </div>
@@ -351,7 +349,7 @@ const formatDate = (dateString) => {
               </table>
             </div>
           </div>
-        </div> <!-- End Tabs 内容 -->
+        </div> <!-- End Tabs content -->
       </div>
     </div>
   </AdminLayout>

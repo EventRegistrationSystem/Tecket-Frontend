@@ -1,9 +1,21 @@
 <script>
+import { useUserStore } from "@/store/userStore";
+import router from "@/router";
 export default {
   // Receive Data from parent component/view
   props: {
     userProfileData: {
       type: Object,
+    },
+  },
+  methods: {
+    logOut() {
+      const userStore = useUserStore();
+      userStore.clearAccessToken();
+      userStore.clearRole();
+
+      // Action NEEDED for refreshToken
+      router.push('/')
     },
   },
 };
@@ -81,7 +93,9 @@ defineEmits(["toggle-sidebar"]);
           class="rounded-circle me-2"
           style="width: 2rem; height: 2rem"
         />
-        <span clx  ass="text-dark d-none d-md-inline">{{ userProfileData.firstName }} {{ userProfileData.lastName }}</span>
+        <span clx ass="text-dark d-none d-md-inline"
+          >{{ userProfileData.firstName }} {{ userProfileData.lastName }}</span
+        >
         <i class="pi pi-angle-down ms-2 fs-6"></i>
 
         <!-- User dropdown menu (shown when isUserMenuOpen is true) -->
@@ -91,20 +105,7 @@ defineEmits(["toggle-sidebar"]);
           style="top: 3rem; width: 12rem; z-index: 10"
         >
           <a
-            href="#"
-            class="d-flex align-items-center px-4 py-2 text-white text-decoration-none user-menu-item"
-          >
-            <i class="pi pi-user me-2"></i> Profile
-          </a>
-          <a
-            href="#"
-            class="d-flex align-items-center px-4 py-2 text-white text-decoration-none user-menu-item"
-          >
-            <i class="pi pi-cog me-2"></i> Settings
-          </a>
-          <div class="border-top border-secondary my-1"></div>
-          <a
-            href="#"
+            v-on:click="logOut()"
             class="d-flex align-items-center px-4 py-2 text-white text-decoration-none user-menu-item"
           >
             <i class="pi pi-power-off me-2"></i> Logout

@@ -2,7 +2,13 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { createTicketType } from '@/api/atickets.js'
+
+const route = useRoute()
+const router = useRouter()
+const eventId = Number(route.params.eventId)
 import { createTicketType } from '@/api/atickets.js'
 
 const route = useRoute()
@@ -50,7 +56,7 @@ const saveTicket = async () => {
       status: ticketForm.value.status
     }
     await createTicketType(eventId, payload)
-    router.push(`/admin/tickets/${eventId}`)
+    router.push({ name: 'TicketTypeCreate', params: {eventId} })
   } catch (err) {
     console.error('Create ticket failed:', err)
   } finally {

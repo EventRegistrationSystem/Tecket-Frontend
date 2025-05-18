@@ -4,6 +4,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 
+import { fetchEventDetails } from '@/api/eventServices.js'
+import { fetchTicketTypes, deleteTicketType } from '@/api/atickets.js'
 import { fetchEventDetails } from '@/api/aevents.js'
 import { fetchTicketTypes, deleteTicketType } from '@/api/atickets.js'
 import { usersMockData } from '@/mock/usersMock.js'
@@ -12,14 +14,42 @@ import { participantsMockData } from '@/mock/participantsMockData.js'
 const route = useRoute()
 const router = useRouter()
 const eventId = Number(route.params.eventId)
+const eventId = Number(route.params.eventId)
 
 const loading = ref(true)
 const activeTab = ref('ticketTypes')
 
 // Data stores
+// Data stores
 const event = ref(null)
 const eventTicketTypes = ref([])
 
+const ticketUsers = ref([])
+const ticketParticipants = ref([])
+
+// Initialization: Pull event details & ticket types, and fill in mock users/participants
+onMounted(async () => {
+  try {
+    const eventData = await fetchEventDetails(eventId)
+    event.value = eventData
+
+    const tickets = await fetchTicketTypes(eventId)
+    eventTicketTypes.value = Array.isArray(tickets) ? tickets : []
+
+    // Mock:  Ticket Users 
+    ticketUsers.value = usersMockData.slice(0, 2).map(user => ({
+      id: user.id,
+      name: `${user.first_name} ${user.last_name}`,
+      email: user.email,
+      ticketType: eventTicketTypes.value[0]?.name || '',
+      purchaseDate: '2025-01-10T10:00:00Z'
+    }))
+
+    // Mock: Participants 
+    ticketParticipants.value = participantsMockData
+  } catch (err) {
+    console.error('Error loading data:', err)
+  } finally {
 const ticketUsers = ref([])
 const ticketParticipants = ref([])
 
@@ -55,6 +85,14 @@ const formatDate = (d) =>
   new Date(d).toLocaleDateString('en-US', {
     year: 'numeric', month: 'short', day: 'numeric'
   })
+  }
+})
+
+// Formatting Dates
+const formatDate = (d) =>
+  new Date(d).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  })
 
 // Ticket Types operation
 const createTicketType = () => router.push({ name: 'TicketTypeCreate', params: { eventId } }) // source from const eventId = Number(route.params.eventId)
@@ -80,10 +118,20 @@ const userSortOrder = ref('asc')
 const toggleUserSortOrder = () => {
   userSortOrder.value = userSortOrder.value === 'asc' ? 'desc' : 'asc'
 }
+const userSortBy = ref('name')
+const userSortOrder = ref('asc')
+const toggleUserSortOrder = () => {
+  userSortOrder.value = userSortOrder.value === 'asc' ? 'desc' : 'asc'
+}
 const filteredTicketUsers = computed(() => {
   let result = ticketUsers.value.filter(u => {
     const q = userSearchQuery.value.toLowerCase()
+  let result = ticketUsers.value.filter(u => {
+    const q = userSearchQuery.value.toLowerCase()
     return (
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.ticketType.toLowerCase().includes(q)
       u.name.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
       u.ticketType.toLowerCase().includes(q)
@@ -91,11 +139,16 @@ const filteredTicketUsers = computed(() => {
   })
   result.sort((a, b) => {
     let cmp = 0
+    let cmp = 0
     if (userSortBy.value === 'name') {
       cmp = a.name.localeCompare(b.name)
     } else {
       cmp = new Date(a.purchaseDate) - new Date(b.purchaseDate)
+      cmp = a.name.localeCompare(b.name)
+    } else {
+      cmp = new Date(a.purchaseDate) - new Date(b.purchaseDate)
     }
+    return userSortOrder.value === 'asc' ? cmp : -cmp
     return userSortOrder.value === 'asc' ? cmp : -cmp
   })
   return result
@@ -105,10 +158,21 @@ const deleteTicketUser = (id) => {
   if (confirm('Are you sure you want to delete this ticket user?')) {
     ticketUsers.value = ticketUsers.value.filter(u => u.id !== id)
   }
+const viewTicketUserDetails = (id) => router.push(`/admin/tickets/users/${id}`)
+const deleteTicketUser = (id) => {
+  if (confirm('Are you sure you want to delete this ticket user?')) {
+    ticketUsers.value = ticketUsers.value.filter(u => u.id !== id)
+  }
 }
 
 // Participants related
+// Participants related
 const participantSearchQuery = ref('')
+const participantSortBy = ref('name')
+const participantSortOrder = ref('asc')
+const toggleParticipantSortOrder = () => {
+  participantSortOrder.value = participantSortOrder.value === 'asc' ? 'desc' : 'asc'
+}
 const participantSortBy = ref('name')
 const participantSortOrder = ref('asc')
 const toggleParticipantSortOrder = () => {
@@ -118,25 +182,38 @@ const filteredParticipants = computed(() => {
   let result = ticketParticipants.value.filter(p => {
     const q = participantSearchQuery.value.toLowerCase()
     const fullName = (p.first_name + ' ' + p.last_name).toLowerCase()
+  let result = ticketParticipants.value.filter(p => {
+    const q = participantSearchQuery.value.toLowerCase()
+    const fullName = (p.first_name + ' ' + p.last_name).toLowerCase()
     return (
+      fullName.includes(q) ||
+      p.email.toLowerCase().includes(q)
       fullName.includes(q) ||
       p.email.toLowerCase().includes(q)
     )
   })
   result.sort((a, b) => {
     let cmp = 0
+    let cmp = 0
     if (participantSortBy.value === 'name') {
       cmp = (a.first_name + ' ' + a.last_name).localeCompare(b.first_name + ' ' + b.last_name)
     } else {
       cmp = new Date(a.created_at) - new Date(b.created_at)
+      cmp = (a.first_name + ' ' + a.last_name).localeCompare(b.first_name + ' ' + b.last_name)
+    } else {
+      cmp = new Date(a.created_at) - new Date(b.created_at)
     }
+    return participantSortOrder.value === 'asc' ? cmp : -cmp
     return participantSortOrder.value === 'asc' ? cmp : -cmp
   })
   return result
 })
 const viewParticipantDetails = (id) => router.push(`/admin/tickets/participants/${id}`)
 const deleteParticipant = (id) => {
+const viewParticipantDetails = (id) => router.push(`/admin/tickets/participants/${id}`)
+const deleteParticipant = (id) => {
   if (confirm('Are you sure you want to delete this participant?')) {
+    ticketParticipants.value = ticketParticipants.value.filter(p => p.id !== id)
     ticketParticipants.value = ticketParticipants.value.filter(p => p.id !== id)
   }
 }
@@ -147,13 +224,19 @@ const deleteParticipant = (id) => {
     <div class="p-3">
       <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:16rem">
         <div class="spinner-border text-primary" style="width:3rem;height:3rem" role="status">
+      <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height:16rem">
+        <div class="spinner-border text-primary" style="width:3rem;height:3rem" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
       <div v-else>
         <button @click="router.push('/admin/tickets')" class="btn btn-link text-primary mb-3">
           <i class="pi pi-arrow-left"></i> Back to Tickets
+        <button @click="router.push('/admin/tickets')" class="btn btn-link text-primary mb-3">
+          <i class="pi pi-arrow-left"></i> Back to Tickets
         </button>
+
+        <!-- Event Header -->
 
         <!-- Event Header -->
         <div class="mb-4">
@@ -168,9 +251,11 @@ const deleteParticipant = (id) => {
               {{ event.status }}
             </span>
             <span class="text-muted ms-2">{{ formatDate(event.startDateTime) }}</span>
+            <span class="text-muted ms-2">{{ formatDate(event.startDateTime) }}</span>
           </div>
         </div>
 
+        <!-- Tabs -->
         <!-- Tabs -->
         <div class="bg-white rounded shadow-sm overflow-hidden mb-4">
           <div class="d-flex border-bottom">
@@ -328,9 +413,3 @@ const deleteParticipant = (id) => {
 .no-border-btn:hover { background-color: #e9ecef; }
 ul { margin:0; padding-left:1rem; }
 </style>
-
-
-
-
-
-
