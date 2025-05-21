@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminLayout from "@/layouts/AdminLayout.vue";
-import { fetchUserById } from "@/api/userServices";
+import { getUserById } from "@/api/userServices";
 
 const route = useRoute();
 const router = useRouter();
@@ -21,7 +21,7 @@ onMounted(async () => {
   contentContainer.style.display = "none";
 
   // Fetch user profile by ID
-  user.value = await fetchUserById(userId);
+  user.value = await getUserById(userId);
   loading = true;
 
   if (user) {
