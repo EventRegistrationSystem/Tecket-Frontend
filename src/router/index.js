@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { useUserStore } from '@/store/userStore'; 
+import { useUserStore } from '@/store/userStore';
 
 // Static imports for view components will be removed or converted to dynamic imports.
 
@@ -9,12 +9,12 @@ const routes = [
   // Authentication views
   { path: "/signIn", name: "SignIn", component: () => import("@/views/auth/SignInView.vue") },
   { path: "/signUp", name: "SignUp", component: () => import("@/views/auth/SignUpView.vue") },
-  
+
   // Public event routes
-  { 
+  {
     path: "/events",
-    name: "EventList", 
-    component: () => import("@/views/event/EventListView.vue") 
+    name: "EventList",
+    component: () => import("@/views/event/EventListView.vue")
   },
   {
     path: "/eventDetail/:id",
@@ -34,13 +34,13 @@ const routes = [
     // meta: { requiresAuth: false } // Can be initiated by guest or logged-in user
   },
   {
-    path: "/register/info", 
+    path: "/register/info",
     name: "PersonalInfo", // Used in TicketSelectionFormView.vue
     component: () => import("@/views/registration/PersonalInfoFormView.vue"),
     // meta: { requiresAuth: false }
   },
   {
-    path: "/register/questions", 
+    path: "/register/questions",
     name: "Questionnaire", // Used in PersonalInfoFormView.vue (presumably)
     component: () => import("@/views/registration/QuestionnaireFormView.vue"),
     // meta: { requiresAuth: false }
@@ -52,7 +52,7 @@ const routes = [
     // meta: { requiresAuth: false }
   },
   {
-    path: "/register/checkout", 
+    path: "/register/checkout",
     name: "Checkout", // Used in ReviewFormView.vue (conditionally)
     component: () => import("@/views/registration/CheckoutView.vue"),
     // meta: { requiresAuth: false }
@@ -60,13 +60,13 @@ const routes = [
   {
     path: "/registration/success",
     name: "RegistrationSuccess",
-    component: () => import("@/views/registration/RegistrationSuccessView.vue"), 
+    component: () => import("@/views/registration/RegistrationSuccessView.vue"),
     // meta: { requiresAuth: false }
   },
   {
     path: "/registration/pending-payment",
     name: "RegistrationPendingPayment",
-    component: () => import("@/views/registration/RegistrationPendingPaymentView.vue"), 
+    component: () => import("@/views/registration/RegistrationPendingPaymentView.vue"),
     // meta: { requiresAuth: false }
   },
 
@@ -74,7 +74,7 @@ const routes = [
   // -- Dashboard --
   {
     path: "/admin",
-    name: "AdminDashboard",  
+    name: "AdminDashboard",
     component: () => import("../views/admin/DashboardView.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] } // Example roles
   },
@@ -82,25 +82,25 @@ const routes = [
   // -- Event Management --
   {
     path: "/admin/events",
-    name: "AdminEventList",  
+    name: "AdminEventList",
     component: () => import("../views/admin/Event/EventsListView.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
   {
     path: "/admin/events/create",
-    name: "AdminEventCreate",  
+    name: "AdminEventCreate",
     component: () => import("../views/admin/Event/EventFormView.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
   {
     path: "/admin/events/:id",
-    name: "AdminEventDetails",  
+    name: "AdminEventDetails",
     component: () => import("../views/admin/Event/EventDetailsView.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
   {
     path: "/admin/events/edit/:id",
-    name: "AdminEventEdit",  
+    name: "AdminEventEdit",
     component: () => import("../views/admin/Event/EventFormView.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
@@ -108,27 +108,33 @@ const routes = [
   // -- User Management Routes (Admin) --
   {
     path: "/admin/users",
-    name: "AdminUserList",  
+    name: "AdminUserList",
     component: () => import("../views/admin/User/UserList.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN'] }
   },
   {
     path: "/admin/users/create",
-    name: "AdminUserCreate",  
+    name: "AdminUserCreate",
     component: () => import("@/views/admin/User/UserCreate.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN'] }
   },
   {
     path: "/admin/users/:userId",
-    name: "AdminUserDetails",  
+    name: "AdminUserDetails",
     component: () => import("@/views/admin/User/UserDetail.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN'] }
   },
   {
     path: "/admin/users/edit/:userId",
-    name: "AdminUserEdit",  
+    name: "AdminUserEdit",
     component: () => import("@/views/admin/User/UserEdit.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN'] }
+  },
+  {
+    path: "/admin/events/:eventId/registrations",
+    name: "AdminEventRegistrationList",
+    component: () => import("@/views/admin/Registration/EventRegistrationListView.vue"),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
 
   // -- Ticket Management Routes (Admin) --
@@ -154,29 +160,29 @@ const routes = [
   // -- Questionnaire Management Routes (Admin) --
   {
     path: "/admin/questionnaires", // Changed from /admin/Questionnaire
-    name: "AdminQuestionnaireList",  
+    name: "AdminQuestionnaireList",
     component: () =>
       import("@/views/admin/Questionnaire/QuestionnaireList.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
   {
     path: "/admin/events/:eventId/questionnaire", // View questionnaire for a specific event
-    name: "AdminViewEventQuestionnaire",  
+    name: "AdminViewEventQuestionnaire",
     component: () =>
       import("@/views/admin/Questionnaire/ViewQuestionnaire.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
 
   // -- User Profile & Management (Authenticated User) --
-  { 
-    path: "/user/profile", 
-    name: "UserProfile", 
-    component: () => import("@/views/user/UserProfileView.vue"), 
-    meta: { requiresAuth: true } 
+  {
+    path: "/user/profile",
+    name: "UserProfile",
+    component: () => import("@/views/user/UserProfileView.vue"),
+    meta: { requiresAuth: true }
   },
   {
     path: "/user/management", // This might be same as profile or for specific user settings
-    name: "UserManagement",  
+    name: "UserManagement",
     component: () => import("@/views/user/userManagementView.vue"),
     meta: { requiresAuth: true }
   },
