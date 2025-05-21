@@ -1,75 +1,84 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import { eventsMockData } from '@/mock/eventsMock.js'
-import { usersMockData } from '@/mock/usersMock.js'
-import { dashboardStatsMockData } from '@/mock/dashboardStatsMock.js'
+import { fetchEvents } from '@/api/eventServices.js'
+import { fetchAllUsers } from '@/api/userServices.js'
 
-const statsData = ref([...dashboardStatsMockData])
-const recentEvents = ref(eventsMockData.slice(0, 5))
+// State variables
+const eventsData = ref([])
+const users = ref([])
+const loading = ref(true)
+const error = ref(null)
 
-const recentUsers = ref(
-  usersMockData.slice(0, 5).map(user => ({
-    id: user.id,
-    name: user.first_name + ' ' + user.last_name,
-    email: user.email,
-    registeredDate: user.created_at,
-    eventsAttended: 0   
+// Fetch events and users on component mount
+onMounted(async () => {
+  try {
+    loading.value = true
+    const response = await fetchEvents({ page: 1, limit: 100 })
+    eventsData.value = response.events || []
+    users.value = await fetchAllUsers()
+  } catch (err) {
+    error.value = err.message || 'Failed to load data'
+  } finally {
+    loading.value = false
+  }
+})
+
+// Dashboard statistics
+const totalEvents = computed(() => eventsData.value.length)
+const activeEventsCount = computed(() =>
+  eventsData.value.filter(e => ['Active', 'PUBLISHED'].includes(e.status)).length
+)
+const totalUsersCount = computed(() => users.value.length)
+
+// Total revenue, summing price * quantitySold from nested tickets if available
+const totalRevenue = computed(() =>
+  eventsData.value.reduce((sum, e) => {
+    if (Array.isArray(e.tickets)) {
+      return sum + e.tickets.reduce((acc, t) => acc + Number(t.price) * t.quantitySold, 0)
+    }
+    return sum
+  }, 0)
+)
+
+const statsData = computed(() => [
+  { title: 'Total Events', value: totalEvents.value, bgColor: 'bg-primary', icon: 'pi pi-calendar' },
+  { title: 'Active Events', value: activeEventsCount.value, bgColor: 'bg-success', icon: 'pi pi-check-circle' },
+  { title: 'Total Users', value: totalUsersCount.value, bgColor: 'bg-warning', icon: 'pi pi-users' },
+  { title: 'Total Revenue', value: `$${totalRevenue.value}`, bgColor: 'bg-info', icon: 'pi pi-dollar' }
+])
+
+// Recent events mapping to include display fields
+const recentEvents = computed(() =>
+  eventsData.value.slice(0, 5).map(e => ({
+    ...e,
+    displayDate: formatDate(e.startDateTime),
+    revenueValue: Array.isArray(e.tickets)
+      ? e.tickets.reduce((acc, t) => acc + Number(t.price) * t.quantitySold, 0)
+      : 0
   }))
 )
 
-const salesChartData = ref(null)
-const salesChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'top'
-    }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      grid: {
-        display: true,
-        color: 'rgba(0, 0, 0, 0.1)'
-      }
-    },
-    x: {
-      grid: {
-        display: false
-      }
-    }
-  }
-})
+// Recent users slice
+const recentUsers = computed(() =>
+  users.value.slice(0, 5).map(u => ({
+    id: u.id,
+    name: `${u.firstName || u.first_name} ${u.lastName || u.last_name}`,
+    email: u.email,
+    registeredDate: u.createdAt || u.created_at,
+    eventsAttended: u._count?.registrations || 0
+  }))
+)
 
-onMounted(() => {
-  salesChartData.value = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-    datasets: [
-      {
-        label: 'Ticket Sales 2024',
-        data: [12500, 14800, 18200, 22500, 25300, 28700, 32100, 34500, 37800, 42200, 46500, 52800],
-        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 2,
-        tension: 0.4
-      },
-      {
-        label: 'Ticket Sales 2023',
-        data: [10200, 12500, 15800, 19500, 22300, 25700, 28600, 31500, 34000, 38200, 42500, 48000],
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        borderColor: 'rgba(75, 192, 192, 1)',
-        borderWidth: 2,
-        tension: 0.4
-      }
-    ]
-  }
-})
+// Utility functions
+const formatDate = iso => {
+  const d = new Date(iso)
+  return isNaN(d) ? '' : d.toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })
+}
 
-const getStatusClass = (status) => {
+const getStatusClass = status => {
   switch (status) {
-    case 'Active':
+    case 'Active': case 'PUBLISHED':
       return 'bg-light text-success'
     case 'Upcoming':
       return 'bg-light text-primary'
@@ -80,14 +89,6 @@ const getStatusClass = (status) => {
     default:
       return 'bg-light text-dark'
   }
-}
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric'
-  })
 }
 </script>
 
@@ -166,13 +167,13 @@ const formatDate = (dateString) => {
                 <tbody>
                   <tr v-for="event in recentEvents" :key="event.id">
                     <td class="px-3 py-2 fs-6 text-dark">{{ event.name }}</td>
-                    <td class="px-3 py-2 fs-6 text-dark">{{ formatDate(event.date) }}</td>
+                    <td class="px-3 py-2 fs-6 text-dark">{{ formatDate(event.startDateTime) }}</td>
                     <td class="px-3 py-2 fs-6">
                       <span :class="getStatusClass(event.status)" class="px-2 py-1 rounded-pill small">
                         {{ event.status }}
                       </span>
                     </td>
-                    <td class="px-3 py-2 fs-6 text-dark">{{ event.revenue }}</td>
+                    <td class="px-3 py-2 fs-6 text-dark">{{ '$' + event.tickets.reduce((sum, t) => sum + Number(t.price) * t.quantitySold, 0) }}</td>
                   </tr>
                 </tbody>
               </table>
