@@ -2,7 +2,6 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import AdminLayout from "@/layouts/AdminLayout.vue";
-import { usersMockData } from "@/mock/usersMock.js";
 
 const router = useRouter();
 
@@ -38,7 +37,7 @@ export default {
         role: this.role,
       };
       const message = await createUser(userData);
-      if (message == "Successful") {
+      if (message) {
         router.push("/admin/users");
       } else {
         // Display ERROR
