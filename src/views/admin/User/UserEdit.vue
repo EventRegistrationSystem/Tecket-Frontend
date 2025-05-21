@@ -1,14 +1,8 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-<<<<<<< HEAD
-import AdminLayout from "@/views/admin/AdminLayout.vue";
-import { usersMockData } from "@/mock/usersMock.js";
-import { getUserById, updateUser } from "@/api/userServices";
-=======
-import AdminLayout from "@/layouts/AdminLayout.vue";
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { fetchUserById, updateUser } from "@/api/userServices";
->>>>>>> Staging
 
 // 获取路由和路由器实例
 const route = useRoute();

@@ -1,13 +1,8 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-<<<<<<< HEAD
-import AdminLayout from "@/views/admin/AdminLayout.vue";
-import { getUserById } from "@/api/userServices";
-=======
-import AdminLayout from "@/layouts/AdminLayout.vue";
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { fetchUserById } from "@/api/userServices";
->>>>>>> Staging
 
 const route = useRoute();
 const router = useRouter();
