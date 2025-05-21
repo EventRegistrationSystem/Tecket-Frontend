@@ -105,6 +105,20 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
 
+  // -- Registration Management Routes (Admin) --
+  {
+    path: "/admin/registrations",
+    name: "AdminSystemRegistrationList",
+    component: () => import("@/views/admin/Registration/SystemRegistrationListView.vue"),
+    meta: { requiresAuth: true, roles: ['ADMIN'] }
+  },
+  {
+    path: "/admin/registrations/:registrationId",
+    name: "AdminRegistrationDetail",
+    component: () => import("@/views/admin/Registration/RegistrationDetailsView.vue"),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
+  },
+
   // -- User Management Routes (Admin) --
   {
     path: "/admin/users",
