@@ -16,14 +16,16 @@ const activeItem = computed(() => {
   const currentPath = route.path;
   if (currentPath.startsWith("/admin/events")) 
     return "events";
-  else if (currentPath.startsWith("/admin/users")) 
+  else if (currentPath.startsWith("/admin/users"))
     return "users";
+  else if (currentPath.startsWith("/admin/registrations")) 
+    return "system-registrations";
   return "dashboard";
 });
 
 const menuItems = [
-  { 
-    id: "dashboard", 
+  {
+    id: "dashboard",
     label: "Dashboard", 
     icon: "pi pi-home", 
     route: "/admin" 
@@ -38,7 +40,13 @@ const menuItems = [
     id: "users", 
     label: "Users", 
     icon: "pi pi-users", 
-    route: "/admin/users" 
+    route: "/admin/users"
+  },
+  { // Added new menu item for system registrations
+    id: "system-registrations",
+    label: "Registrations",
+    icon: "pi pi-list", // Using pi pi-list icon
+    route: "/admin/registrations"
   }
 ];
 
