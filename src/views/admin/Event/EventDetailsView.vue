@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 
 // Introducing interface methods from the API layer, based on code implementations you provide
 import { fetchEventDetails } from '@/api/eventServices.js'

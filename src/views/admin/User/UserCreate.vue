@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import AdminLayout from "@/layouts/AdminLayout.vue";
+import AdminLayout from "@/views/admin/AdminLayout.vue";
 import { usersMockData } from "@/mock/usersMock.js";
 
 const router = useRouter();

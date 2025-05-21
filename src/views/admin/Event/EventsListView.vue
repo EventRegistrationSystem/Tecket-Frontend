@@ -151,7 +151,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { fetchEvents, deleteEvent as deleteEventApi } from '@/api/eventServices.js'
 
 // Router

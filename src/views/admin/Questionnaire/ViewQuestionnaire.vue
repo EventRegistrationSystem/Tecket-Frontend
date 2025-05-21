@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { questionsMockData } from '@/mock/questionsMockData.js'
 import { usersMockData } from '@/mock/usersMock.js'
 import { eventsMockData } from '@/mock/eventsMock.js'
