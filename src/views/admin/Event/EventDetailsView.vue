@@ -189,8 +189,8 @@ const getStatusClass = (status) => {
           <div class="col-12 col-lg-8">
             <!-- Event Pictures & Profile Cards -->
             <div class="bg-white rounded shadow-sm overflow-hidden mb-4">
-              <img :src="event.imageUrl" :alt="event.name" class="w-100"
-                   style="height: 16rem; object-fit: cover;">
+              <img :src="event.imageUrl || 'https://placehold.co/800x256?text=Event+Image'" :alt="event.name" class="w-100"
+                   style="height: 16rem; object-fit: cover;"> <!-- Added placeholder -->
               <div class="p-4">
                 <h2 class="fs-4 fw-semibold text-dark mb-3">About This Event</h2>
                 <p class="text-secondary mb-3">{{ event.description }}</p>

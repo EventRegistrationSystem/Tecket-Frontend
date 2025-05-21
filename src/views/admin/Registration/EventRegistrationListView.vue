@@ -227,17 +227,15 @@ const formatCurrency = (amount) => {
 }
 
 const getStatusClass = (status) => {
-  // Adapted from EventsListView.vue, using Bootstrap text/bg utilities
-  // Assuming status values like 'CONFIRMED', 'PENDING', 'CANCELLED'
   switch (status?.toUpperCase()) {
     case 'CONFIRMED':
-      return 'bg-success-subtle text-success-emphasis' // Bootstrap 5.3+
+      return 'bg-success-subtle text-success-emphasis' 
     case 'PENDING':
-      return 'bg-warning-subtle text-warning-emphasis' // Bootstrap 5.3+
+      return 'bg-warning-subtle text-warning-emphasis' 
     case 'CANCELLED':
-      return 'bg-danger-subtle text-danger-emphasis'   // Bootstrap 5.3+
+      return 'bg-danger-subtle text-danger-emphasis'   
     default:
-      return 'bg-secondary-subtle text-secondary-emphasis' // Bootstrap 5.3+
+      return 'bg-secondary-subtle text-secondary-emphasis' 
   }
 }
 
@@ -245,6 +243,4 @@ const getStatusClass = (status) => {
 
 <style scoped>
 /* Add any component-specific styles here if needed */
-/* Ensure PrimeIcons are globally available or import them if needed */
-/* For example: @import 'primeicons/primeicons.css'; if not already in main.js or similar */
 </style>
