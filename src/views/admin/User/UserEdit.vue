@@ -1,9 +1,14 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+<<<<<<< HEAD
 import AdminLayout from "@/views/admin/AdminLayout.vue";
 import { usersMockData } from "@/mock/usersMock.js";
 import { getUserById, updateUser } from "@/api/userServices";
+=======
+import AdminLayout from "@/layouts/AdminLayout.vue";
+import { fetchUserById, updateUser } from "@/api/userServices";
+>>>>>>> Staging
 
 // 获取路由和路由器实例
 const route = useRoute();
@@ -23,7 +28,7 @@ const form = ref({
 
 // 页面加载后查找对应的用户，并初始化表单数据
 onMounted(async () => {
-  user.value = await getUserById(userId);
+  user.value = await fetchUserById(userId);
   if (user.value) {
     // 将查找到的用户数据复制到表单中
     form.value = {
@@ -49,7 +54,7 @@ const updateUserData = async () => {
   const message = await updateUser(userId, userData);
 
   console.log(message)
-  if (message == "Successful") {
+  if (message) {
     // If update successful, then move to that user's detail
     router.push(`/admin/users/${userId}`);
   } else {
