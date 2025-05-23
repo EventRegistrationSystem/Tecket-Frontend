@@ -50,13 +50,46 @@
       <div class="col-4"></div>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="isLoading" class="text-center mt-5">
+      <p>Loading events...</p>
+      <!-- You can replace this with a spinner component if you have one -->
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="alert alert-danger mt-5 mx-5" role="alert">
+      {{ error }}
+    </div>
+    
+    <!-- Events Display -->
+    <div v-else-if="events && events.length > 0" class="container mt-5">
+      <div class="row">
+        <div v-for="event in events" :key="event.id" class="col-md-4 mb-4">
+          <div class="card h-100">
+            <img :src="event.imageUrl || 'https://via.placeholder.com/300x200?text=Event+Image'" class="card-img-top" alt="Event Image" style="height: 200px; object-fit: cover;">
+            <div class="card-body">
+              <h5 class="card-title">{{ event.name }}</h5>
+              <p class="card-text">{{ event.description ? event.description.substring(0, 100) + (event.description.length > 100 ? '...' : '') : 'No description available.' }}</p>
+              <router-link :to="'/events/' + event.id" class="btn btn-primary">View Details</router-link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Events State (after attempting to load) -->
     <h5
+      v-else
       style="font-family: 'Font'"
       class="fw-bold mt-5 ps-5 text-body-tertiary"
     >
-      No upcoming events
+      No upcoming events at the moment.
     </h5>
-    <div class="container text-center">
+
+    <div class="container text-center mt-4">
       <router-link to="/events">
         <button
           type="button"
@@ -172,11 +205,31 @@
 <script>
 import navbar from "@/components/Navbar.vue";
 import Footer from "@/components/Footer.vue";
+import { fetchEvents } from "@/api/eventServices.js";
 
 export default {
   components: {
     navbar,
     Footer
+  },
+  data() {
+    return {
+      events: [],
+      isLoading: false,
+      error: null,
+    };
+  },
+  async mounted() {
+    this.isLoading = true;
+    try {
+      const response = await fetchEvents({ limit: 3 }); // Fetching 3 latest events for the homepage
+      this.events = response.events; // Assuming the API returns { events: [], pagination: {} }
+    } catch (err) {
+      this.error = "Failed to load events.";
+      console.error("Error fetching events for homepage:", err);
+    } finally {
+      this.isLoading = false;
+    }
   },
 };
 </script>
