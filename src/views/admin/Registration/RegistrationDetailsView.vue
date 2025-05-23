@@ -98,11 +98,33 @@
 
 
         <!-- Action Buttons (e.g., Update Status, Edit Details, Export) -->
-        <div class="mt-4">
-          <!-- Example: -->
-          <!-- <button class="btn btn-primary me-2">Update Status</button> -->
-          <!-- <button class="btn btn-secondary">Edit Details</button> -->
-          <!-- <button class="btn btn-success">Export</button> -->
+        <div class="mt-4 pt-3 border-top">
+          <h3 class="fs-5 fw-bold mb-3">Update Status</h3>
+          <div v-if="updateStatusSuccessMessage" class="alert alert-success">{{ updateStatusSuccessMessage }}</div>
+          <div v-if="updateStatusError" class="alert alert-danger">{{ updateStatusError }}</div>
+
+          <div class="row align-items-end">
+            <div class="col-md-4 mb-3">
+              <label for="statusSelect" class="form-label">New Status:</label>
+              <select id="statusSelect" class="form-select" v-model="selectedStatus" :disabled="isUpdatingStatus">
+                <option v-for="status in availableStatuses" :key="status" :value="status">
+                  {{ status }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-auto mb-3">
+              <button
+                class="btn btn-primary"
+                @click="handleUpdateStatus"
+                :disabled="isUpdatingStatus || !selectedStatus || (registrationDetails && selectedStatus === registrationDetails.status)"
+              >
+                <span v-if="isUpdatingStatus" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span v-if="isUpdatingStatus"> Updating...</span>
+                <span v-else>Update Status</span>
+              </button>
+            </div>
+          </div>
+          <!-- Other actions like Edit Details, Export can be added here -->
         </div>
       </div>
 
@@ -115,9 +137,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { getRegistrationDetails } from '@/api/registrationServices.js'
+import { getRegistrationDetails, updateRegistrationStatus } from '@/api/registrationServices.js'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
 
 const route = useRoute()
@@ -127,14 +149,27 @@ const registrationDetails = ref(null)
 const loading = ref(false)
 const error = ref(null)
 
+// State for status update
+const selectedStatus = ref('')
+const isUpdatingStatus = ref(false)
+const updateStatusError = ref(null)
+const updateStatusSuccessMessage = ref(null)
+
+const availableStatuses = ['CONFIRMED', 'PENDING', 'CANCELLED'] // Add more if needed based on backend
+
 const fetchRegistrationDetails = async () => {
   loading.value = true
   error.value = null
   registrationDetails.value = null // Clear previous details
+  updateStatusError.value = null
+  updateStatusSuccessMessage.value = null
   try {
     // The API response structure is { message, data: { registrationDetails } }
     const response = await getRegistrationDetails(registrationId.value)
     registrationDetails.value = response.data // Assuming the details are in response.data
+    if (registrationDetails.value) {
+      selectedStatus.value = registrationDetails.value.status // Initialize selectedStatus
+    }
   } catch (err) {
     console.error(`Failed to fetch registration details for ID ${registrationId.value}:`, err)
     error.value = err.response?.data?.message || err.message || 'Failed to load registration details.'
@@ -150,9 +185,36 @@ onMounted(() => {
 watch(() => route.params.registrationId, (newId) => {
   if (newId && newId !== registrationId.value) {
     registrationId.value = newId
-    fetchRegistrationDetails()
+    fetchRegistrationDetails() // This will also reset selectedStatus
   }
 })
+
+const handleUpdateStatus = async () => {
+  if (!selectedStatus.value || selectedStatus.value === registrationDetails.value.status) {
+    updateStatusError.value = 'Please select a new status different from the current one.'
+    return
+  }
+  isUpdatingStatus.value = true
+  updateStatusError.value = null
+  updateStatusSuccessMessage.value = null
+  try {
+    const response = await updateRegistrationStatus(registrationId.value, selectedStatus.value)
+    if (response.data) {
+      registrationDetails.value = response.data // Update with the full response data
+      selectedStatus.value = response.data.status // Ensure selectedStatus reflects the new truth
+      updateStatusSuccessMessage.value = response.message || 'Status updated successfully!'
+    } else {
+      // Fallback if response.data is not as expected, refetch to be safe
+      await fetchRegistrationDetails() // This will re-initialize selectedStatus from the fetched data
+      updateStatusSuccessMessage.value = 'Status updated successfully! Details refreshed.'
+    }
+  } catch (err) {
+    console.error(`Failed to update status for registration ID ${registrationId.value}:`, err)
+    updateStatusError.value = err.response?.data?.message || err.message || 'Failed to update status.'
+  } finally {
+    isUpdatingStatus.value = false
+  }
+}
 
 // Helper functions (can be shared or moved to utilities)
 const formatDate = (dateString) => {
