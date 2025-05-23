@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 
 // Importing API services
 import { fetchEventDetails, createEvent, updateEvent } from '@/api/eventServices.js'

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useUserStore } from "@/store/userStore"; // Import userStore
 
 const props = defineProps({
   collapsed: {
@@ -11,36 +12,84 @@ const props = defineProps({
 const emit = defineEmits(["toggle-sidebar"]);
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore(); // Instantiate userStore
+
+const menuItems = computed(() => {
+  const role = userStore.currentUser?.role;
+  if (role === 'ADMIN') {
+    return [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: "pi pi-home",
+        route: "/admin"
+      },
+      {
+        id: "events",
+        label: "Events",
+        icon: "pi pi-calendar",
+        route: "/admin/events",
+      },
+      {
+        id: "users",
+        label: "Users",
+        icon: "pi pi-users",
+        route: "/admin/users"
+      },
+      {
+        id: "system-registrations",
+        label: "Registrations",
+        icon: "pi pi-list",
+        route: "/admin/registrations"
+      }
+    ];
+  } else if (role === 'ORGANIZER') {
+    return [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        icon: "pi pi-home",
+        route: "/admin"
+      },
+      {
+        id: "my-events",
+        label: "My Events",
+        icon: "pi pi-calendar",
+        route: "/admin/events"
+      }
+    ];
+  }
+  return []; // Default to empty if no role or unknown role
+});
 
 const activeItem = computed(() => {
   const currentPath = route.path;
-  if (currentPath.startsWith("/admin/events")) 
-    return "events";
-  else if (currentPath.startsWith("/admin/users")) 
-    return "users";
-  return "dashboard";
-});
+  const role = userStore.currentUser?.role;
 
-const menuItems = [
-  { 
-    id: "dashboard", 
-    label: "Dashboard", 
-    icon: "pi pi-home", 
-    route: "/admin" 
-  },
-  {
-    id: "events",
-    label: "Events",
-    icon: "pi pi-calendar",
-    route: "/admin/events",
-  },
-  { 
-    id: "users", 
-    label: "Users", 
-    icon: "pi pi-users", 
-    route: "/admin/users" 
+  if (role === 'ORGANIZER') {
+    // If organizer is on /admin or /admin/events, highlight "My Events"
+    if (currentPath.startsWith("/admin/events") || currentPath === "/admin") {
+      return "my-events";
+    }
+  } else if (role === 'ADMIN') {
+    if (currentPath.startsWith("/admin/events")) {
+      return "events";
+    } else if (currentPath.startsWith("/admin/users")) {
+      return "users";
+    } else if (currentPath.startsWith("/admin/registrations")) {
+      return "system-registrations";
+    } else if (currentPath === "/admin") { // Explicitly for /admin dashboard
+      return "dashboard";
+    }
   }
-];
+  // Fallback or if no specific item matches (e.g. deep admin sub-pages not in main nav)
+  // Try to match based on the available menu items for the current role
+  const currentTopLevelPath = "/" + currentPath.split('/')[1]; // e.g. /admin
+  const matchedItem = menuItems.value.find(item => item.route === currentPath || item.route === currentTopLevelPath);
+  if (matchedItem) return matchedItem.id;
+  
+  return ""; // Default if no match
+});
 
 const sidebarStyle = computed(() => {
   return {

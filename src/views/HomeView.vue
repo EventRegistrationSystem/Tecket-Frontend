@@ -68,7 +68,7 @@
       </router-link>
     </div>
   </div>
-  <section
+  <!-- <section
     class="d-flex align-items-center mt-4"
     style="background-color: #ffe071"
   >
@@ -111,7 +111,7 @@
         </div>
       </div>
     </div>
-  </section>
+  </section> -->
 
   <div class="align-item-center pt-4 text-center">
     <h1>For organisations</h1>

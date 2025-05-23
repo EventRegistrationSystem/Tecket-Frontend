@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AdminLayout from "@/layouts/AdminLayout.vue";
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { fetchUserById, updateUser } from "@/api/userServices";
 
 // 获取路由和路由器实例

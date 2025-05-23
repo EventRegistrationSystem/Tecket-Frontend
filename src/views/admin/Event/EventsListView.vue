@@ -73,6 +73,7 @@
                     <i v-if="sortBy === 'revenue'" :class="sortOrder === 'asc' ? 'pi pi-sort-up' : 'pi pi-sort-down'" class="ms-1"></i>
                   </div>
                 </th>
+                <th class="px-3 py-2 text-start fs-6 text-muted">Registrations</th> <!-- New Header -->
                 <th class="px-3 py-2 text-center fs-6 text-muted">Actions</th>
               </tr>
             </thead>
@@ -107,6 +108,15 @@
                   </div>
                 </td>
                 <td class="px-3 py-2 text-dark">{{ event.revenue }}</td>
+                <td class="px-3 py-2 text-center"> <!-- New TD for Registrations -->
+                  <router-link
+                    :to="{ name: 'AdminEventRegistrationList', params: { eventId: event.id } }"
+                    class="btn btn-link text-primary p-0"
+                    title="View Registrations"
+                  >
+                    <i class="pi pi-users"></i> <!-- PrimeIcon for users/registrations -->
+                  </router-link>
+                </td>
                 <td class="px-3 py-2 text-center">
                   <button @click="viewEventDetails(event.id)" class="btn btn-link text-primary p-0" title="View Details">
                     <i class="pi pi-eye"></i>
@@ -120,7 +130,7 @@
                 </td>
               </tr>
               <tr v-if="filteredEvents.length === 0 && !loading">
-                <td colspan="7" class="px-3 py-4 text-center text-muted">
+                <td colspan="8" class="px-3 py-4 text-center text-muted"> <!-- Increased colspan -->
                   <div class="d-flex flex-column align-items-center">
                     <i class="pi pi-calendar-times fs-1 mb-2"></i>
                     <p class="fw-medium">No events found</p>
@@ -151,7 +161,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
+import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { fetchEvents, deleteEvent as deleteEventApi } from '@/api/eventServices.js'
 
 // Router

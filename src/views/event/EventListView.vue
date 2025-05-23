@@ -133,20 +133,16 @@
               />
             </router-link>
             <div class="card-body">
+              <!-- Keep router-link around the name -->
               <router-link
                 :to="{ name: 'EventDetail', params: { id: event.id } }"
                 class="link-warning"
               >
                 <h5 class="card-title">{{ event.name }}</h5>
               </router-link>
-              <p class="card-text">{{ event.description }}</p>
+              <!-- Keep start date -->
               <p class="card-text">Start: {{ formatDate(event.startDateTime) }}</p>
-              <p class="card-text">Location: {{ event.location }}</p>
-              <p class="card-text">
-                Price:
-                <!-- Display the first ticket price if the ticket data exists, otherwise judge it according to isFree. -->
-                {{ event.tickets && event.tickets.length > 0 ? '$' + event.tickets[0].price : (event.isFree ? 'Free' : 'N/A') }}
-              </p>
+              <!-- Removed description, location, and price -->
             </div>
           </div>
 
@@ -227,10 +223,10 @@ const filterCriteria = ref({
   maxPrice: Infinity
 });
 
-const defaultBanner = "https://via.placeholder.com/288x180?text=Event+Banner";
+const defaultBanner = "https://placehold.co/288x180?text=Event"; // Changed to placehold.co and simplified text
 const userStore = useUserStore();
 
-// Asynchronously fetch the activity list data with token 
+// Asynchronously fetch the activity list data with token
 onMounted(async () => {
   try {
     const token = userStore.accessToken || localStorage.getItem("accessToken");
