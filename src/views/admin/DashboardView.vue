@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { eventsMockData } from '@/mock/eventsMock.js'
 import { usersMockData } from '@/mock/usersMock.js'
