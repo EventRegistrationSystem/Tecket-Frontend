@@ -63,9 +63,9 @@
                 :required="question.isRequired"
               />
 
-              <!-- MULTIPLE_CHOICE (Dropdown/Select) -->
+              <!-- DROPDOWN Input -->
               <select
-                v-else-if="question.question.questionType === 'MULTIPLE_CHOICE' && question.question.validationRules?.options && question.question.validationRules.options.length > 0"
+                v-else-if="question.question.questionType === 'DROPDOWN' && question.question.options && question.question.options.length > 0"
                 class="form-select"
                 :id="`question-${currentParticipantIndex}-${qIndex}`"
                 :value="getParticipantResponse(question.id)"
@@ -73,14 +73,33 @@
                 :required="question.isRequired"
               >
                 <option value="" disabled>Select an option</option>
-                <option v-for="option in question.question.validationRules.options" :key="option" :value="option">
-                  {{ option }}
+                <option v-for="optionObj in question.question.options" :key="optionObj.id || optionObj.optionText" :value="optionObj.optionText">
+                  {{ optionObj.optionText }}
                 </option>
               </select>
+              
+              <!-- CHECKBOX Input (Example, assuming backend sends 'CHECKBOX' type and options) -->
+              <!-- This part is for future extension if CHECKBOX type is fully supported with options -->
+              <div v-else-if="question.question.questionType === 'CHECKBOX' && question.question.options && question.question.options.length > 0">
+                <div v-for="optionObj in question.question.options" :key="optionObj.id || optionObj.optionText" class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    :value="optionObj.optionText"
+                    :id="`question-${currentParticipantIndex}-${qIndex}-${optionObj.id || optionObj.optionText}`"
+                    @change="updateCheckboxResponse(question.id, optionObj.optionText, $event.target.checked)"
+                    :checked="getParticipantResponse(question.id)?.includes(optionObj.optionText)"
+                    :required="question.isRequired && !getParticipantResponse(question.id)?.length" 
+                  />
+                  <label class="form-check-label" :for="`question-${currentParticipantIndex}-${qIndex}-${optionObj.id || optionObj.optionText}`">
+                    {{ optionObj.optionText }}
+                  </label>
+                </div>
+              </div>
 
-              <!-- Fallback to TEXT input if type is not recognized or MCQ options are missing -->
+              <!-- Fallback to TEXT input if type is not recognized or options are missing for choice types -->
               <input
-                v-else
+                v-else-if="question.question.questionType !== 'DROPDOWN' && question.question.questionType !== 'CHECKBOX'"
                 type="text"
                 class="form-control"
                 :id="`question-${currentParticipantIndex}-${qIndex}-fallback`"
