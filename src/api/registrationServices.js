@@ -85,3 +85,21 @@ export const getRegistrationDetails = async (registrationId) => {
     throw error
   }
 }
+
+/**
+ * Updates the status of a specific registration.
+ *
+ * @param {string|number} registrationId - The ID of the registration to update.
+ * @param {string} status - The new status for the registration (e.g., 'CONFIRMED', 'CANCELLED').
+ * @returns {Promise<object>} The response data from the API, typically the updated registration details.
+ * @throws {Error} If the API request fails.
+ */
+export const updateRegistrationStatus = async (registrationId, status) => {
+  try {
+    const response = await httpClient.patch(`/registrations/${registrationId}/status`, { status })
+    return response.data
+  } catch (error) {
+    console.error(`Error updating status for registration ID ${registrationId}:`, error.response ? error.response.data : error.message)
+    throw error
+  }
+}
