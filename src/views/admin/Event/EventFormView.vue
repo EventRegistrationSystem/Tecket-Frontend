@@ -151,10 +151,12 @@ onMounted(async () => {
           let frontendQuestionType = (q.question.questionType || 'text').toLowerCase();
           if (frontendQuestionType === 'dropdown') {
             frontendQuestionType = 'select'; // Map backend DROPDOWN to frontend 'select'
+          } else if (frontendQuestionType === 'checkbox') {
+            frontendQuestionType = 'checkbox'; // Map backend CHECKBOX to frontend 'checkbox'
           }
 
           let frontendOptions = ['Option 1']; // Default
-          if (q.question.questionType === 'DROPDOWN' && Array.isArray(q.question.options)) {
+          if ((q.question.questionType === 'DROPDOWN' || q.question.questionType === 'CHECKBOX') && Array.isArray(q.question.options)) {
             frontendOptions = q.question.options.map(opt => opt.optionText);
           } else if (q.question.options) {
             // Fallback for other potential structures or existing data
@@ -244,9 +246,9 @@ const validateForm = () => {
   } else {
     questions.value.forEach((q, index) => {
       if (!q.text.trim()) errors.value[`question_${index}_text`] = `Question ${index + 1} text is required.`;
-      // Add validation for options if question type is 'select' (DROPDOWN)
-      if (q.type === 'select' && (!q.options || q.options.length === 0 || q.options.some(opt => !opt.trim()))) {
-        errors.value[`question_${index}_options`] = `Question ${index + 1} (Dropdown) must have at least one non-empty option.`;
+      // Add validation for options if question type is 'select' (DROPDOWN) or 'checkbox'
+      if ((q.type === 'select' || q.type === 'checkbox') && (!q.options || q.options.length === 0 || q.options.some(opt => !opt.trim()))) {
+        errors.value[`question_${index}_options`] = `Question ${index + 1} (${q.type === 'select' ? 'Dropdown' : 'Checkboxes'}) must have at least one non-empty option.`;
       }
     });
   }
@@ -311,7 +313,6 @@ const saveEvent = async () => {
           backendQuestionType = 'DROPDOWN';
         } else if (q.type === 'checkbox') {
           // 'checkbox' on frontend maps to 'CHECKBOX' on backend
-
           backendQuestionType = 'CHECKBOX';
         }
         // Other types like date, email, number might map to TEXT or specific backend types

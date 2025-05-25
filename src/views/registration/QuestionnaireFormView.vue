@@ -78,8 +78,7 @@
                 </option>
               </select>
               
-              <!-- CHECKBOX Input (Example, assuming backend sends 'CHECKBOX' type and options) -->
-              <!-- This part is for future extension if CHECKBOX type is fully supported with options -->
+              <!-- CHECKBOX Input -->
               <div v-else-if="question.question.questionType === 'CHECKBOX' && question.question.options && question.question.options.length > 0">
                 <div v-for="optionObj in question.question.options" :key="optionObj.id || optionObj.optionText" class="form-check">
                   <input
@@ -88,8 +87,8 @@
                     :value="optionObj.optionText"
                     :id="`question-${currentParticipantIndex}-${qIndex}-${optionObj.id || optionObj.optionText}`"
                     @change="updateCheckboxResponse(question.id, optionObj.optionText, $event.target.checked)"
-                    :checked="getParticipantResponse(question.id)?.includes(optionObj.optionText)"
-                    :required="question.isRequired && !getParticipantResponse(question.id)?.length" 
+                    :checked="isCheckboxChecked(question.id, optionObj.optionText)"
+                    :required="question.isRequired && !getParticipantResponseArray(question.id).length" 
                   />
                   <label class="form-check-label" :for="`question-${currentParticipantIndex}-${qIndex}-${optionObj.id || optionObj.optionText}`">
                     {{ optionObj.optionText }}
@@ -99,7 +98,7 @@
 
               <!-- Fallback to TEXT input if type is not recognized or options are missing for choice types -->
               <input
-                v-else-if="question.question.questionType !== 'DROPDOWN' && question.question.questionType !== 'CHECKBOX'"
+                v-else
                 type="text"
                 class="form-control"
                 :id="`question-${currentParticipantIndex}-${qIndex}-fallback`"
@@ -181,6 +180,22 @@ const getParticipantResponse = (eventQuestionId) => {
   return '';
 }
 
+// Helper to get response as an array for CHECKBOX type
+const getParticipantResponseArray = (eventQuestionId) => {
+  const responseText = getParticipantResponse(eventQuestionId);
+  try {
+    const parsed = JSON.parse(responseText);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+// Helper to check if a specific checkbox option is selected
+const isCheckboxChecked = (eventQuestionId, optionText) => {
+  return getParticipantResponseArray(eventQuestionId).includes(optionText);
+};
+
 const updateResponse = (eventQuestionId, value) => {
   registrationStore.updateParticipantResponse(currentParticipantIndex.value, eventQuestionId, value);
   // Clear specific error for this question on input
@@ -188,6 +203,25 @@ const updateResponse = (eventQuestionId, value) => {
      delete formErrors.value[currentParticipantIndex.value][eventQuestionId];
   }
 }
+
+// Action to handle checkbox responses (multiple selections)
+const updateCheckboxResponse = (eventQuestionId, optionText, isChecked) => {
+  let currentSelections = getParticipantResponseArray(eventQuestionId);
+
+  if (isChecked) {
+    if (!currentSelections.includes(optionText)) {
+      currentSelections.push(optionText);
+    }
+  } else {
+    currentSelections = currentSelections.filter(item => item !== optionText);
+  }
+  // Store the array as a JSON string
+  registrationStore.updateParticipantResponse(currentParticipantIndex.value, eventQuestionId, JSON.stringify(currentSelections));
+  // Clear specific error for this question on input
+  if (formErrors.value[currentParticipantIndex.value]?.[eventQuestionId]) {
+     delete formErrors.value[currentParticipantIndex.value][eventQuestionId];
+  }
+};
 
 
 const handleStepClick = (clickedStepIndex) => {
@@ -210,7 +244,15 @@ const areParticipantQuestionsComplete = (participant) => {
   return eventQuestions.value.every(q => {
     if (!q.isRequired) return true;
     const response = participant.responses.find(r => r.eventQuestionId === q.id);
-    return response && response.responseText?.trim() !== '';
+    
+    if (q.question.questionType === 'CHECKBOX') {
+      // For checkboxes, check if the parsed array has any selections
+      const selectedOptions = getParticipantResponseArray(q.id);
+      return selectedOptions.length > 0;
+    } else {
+      // For other types (TEXT, DROPDOWN), check if responseText is not empty
+      return response && response.responseText?.trim() !== '';
+    }
   });
 }
 
@@ -227,10 +269,18 @@ const validateCurrentParticipantQuestions = () => {
 
   eventQuestions.value.forEach(question => {
     if (question.isRequired) {
-      const response = participant.responses.find(r => r.eventQuestionId === question.id);
-      if (!response || !response.responseText?.trim()) {
-        errors[question.id] = `${question.question.questionText} is required.`;
-        isValid = false;
+      if (question.question.questionType === 'CHECKBOX') {
+        const selectedOptions = getParticipantResponseArray(question.id);
+        if (selectedOptions.length === 0) {
+          errors[question.id] = `${question.question.questionText} is required. Please select at least one option.`;
+          isValid = false;
+        }
+      } else {
+        const response = participant.responses.find(r => r.eventQuestionId === question.id);
+        if (!response || !response.responseText?.trim()) {
+          errors[question.id] = `${question.question.questionText} is required.`;
+          isValid = false;
+        }
       }
     }
   });
@@ -245,10 +295,27 @@ const validateAllParticipantsQuestions = () => {
     const errors = {};
      eventQuestions.value.forEach(question => {
         if (question.isRequired) {
-            const response = participant.responses.find(r => r.eventQuestionId === question.id);
-            if (!response || !response.responseText?.trim()) {
-                errors[question.id] = `${question.question.questionText} is required.`;
-                allValid = false;
+            if (question.question.questionType === 'CHECKBOX') {
+                const selectedOptions = getParticipantResponseArray(question.id); // This needs to be called on the correct participant
+                // To validate for all participants, we need to get the response for that specific participant
+                const participantResponse = participant.responses.find(r => r.eventQuestionId === question.id);
+                let currentSelections = [];
+                try {
+                    currentSelections = participantResponse && participantResponse.responseText ? JSON.parse(participantResponse.responseText) : [];
+                } catch (e) {
+                    currentSelections = [];
+                }
+
+                if (currentSelections.length === 0) {
+                    errors[question.id] = `${question.question.questionText} is required. Please select at least one option.`;
+                    allValid = false;
+                }
+            } else {
+                const response = participant.responses.find(r => r.eventQuestionId === question.id);
+                if (!response || !response.responseText?.trim()) {
+                    errors[question.id] = `${question.question.questionText} is required.`;
+                    allValid = false;
+                }
             }
         }
     });
