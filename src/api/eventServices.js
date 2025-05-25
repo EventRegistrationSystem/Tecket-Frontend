@@ -1,4 +1,5 @@
 import httpClient from './httpClient';
+import { useUserStore } from '@/store/userStore'; // Import userStore
 
 // The handleResponse helper is no longer needed as Axios and its interceptors handle this.
 
@@ -8,9 +9,17 @@ import httpClient from './httpClient';
  * @returns {Promise<{ events: Array, pagination: Object }>} 
  */
 export const fetchEvents = async (params = {}) => {
+  const userStore = useUserStore();
+  const currentUser = userStore.currentUser;
+  let requestParams = { ...params }; // Create a mutable copy of params
+
+  if (currentUser && currentUser.role === 'ORGANIZER') {
+    requestParams.myEvents = true; // Add myEvents flag for organizers
+  }
+
   try {
-    const response = await httpClient.get('/events', { params });
-    return response.data.data; 
+    const response = await httpClient.get('/events', { params: requestParams }); // Use modified requestParams
+    return response.data.data;
   } catch (error) {
     console.error('Error fetching events:', error.response?.data?.message || error.message);
     throw error.response?.data || error;
