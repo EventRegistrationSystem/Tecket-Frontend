@@ -122,29 +122,6 @@ const getStatusClass = status => {
           </div>
         </div>
       </div>
-
-      <!-- Charts Row -->
-      <div class="row g-4 mb-4">
-        <!-- Sales Chart -->
-        <div class="col-12 col-lg-6">
-          <div class="bg-white rounded shadow-sm p-3">
-            <h2 class="fs-5 fw-semibold text-dark mb-3">Ticket Sales Overview</h2>
-            <div style="height: 20rem;">
-              <!-- <Chart v-if="salesChartData" type="line" :data="salesChartData" :options="salesChartOptions" /> -->
-            </div>
-          </div>
-        </div>
-        
-        <!-- Events by Category (placeholder) -->
-        <div class="col-12 col-lg-6">
-          <div class="bg-white rounded shadow-sm p-3">
-            <h2 class="fs-5 fw-semibold text-dark mb-3">Events by Category</h2>
-            <div class="d-flex align-items-center justify-content-center" style="height: 20rem;">
-              <p class="text-muted">Chart will be implemented</p>
-            </div>
-          </div>
-        </div>
-      </div>
       
       <!-- Tables Row -->
       <div class="row g-4 mb-4">

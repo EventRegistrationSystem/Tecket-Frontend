@@ -18,7 +18,8 @@ const httpClient = axios.create({
 httpClient.interceptors.request.use(
   (config) => {
     const userStore = useUserStore();
-    if (userStore.accessToken) {
+    // Only add Authorization header if it's not a public view request
+    if (userStore.accessToken && !config.publicView) {
       config.headers['Authorization'] = `Bearer ${userStore.accessToken}`;
     }
 
@@ -69,9 +70,9 @@ httpClient.interceptors.response.use(
 
     // If the error was on the refresh-token endpoint itself (e.g. refresh token invalid)
     if (error.response?.status === 401 && originalRequest.url === '/auth/refresh-token') {
-        console.error('Refresh token is invalid or expired. This was a 401 on /auth/refresh-token itself.');
-        userStore.clearUserSession();
-        window.location.href = '/signIn';
+      console.error('Refresh token is invalid or expired. This was a 401 on /auth/refresh-token itself.');
+      userStore.clearUserSession();
+      window.location.href = '/signIn';
     }
 
     // For other errors, or if refresh fails, just pass the error along

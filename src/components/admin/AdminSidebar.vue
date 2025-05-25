@@ -12,7 +12,7 @@ const props = defineProps({
 const emit = defineEmits(["toggle-sidebar"]);
 const router = useRouter();
 const route = useRoute();
-const userStore = useUserStore(); // Instantiate userStore
+const userStore = useUserStore();
 
 const menuItems = computed(() => {
   const role = userStore.currentUser?.role;
@@ -59,7 +59,7 @@ const menuItems = computed(() => {
       }
     ];
   }
-  return []; // Default to empty if no role or unknown role
+  return []; 
 });
 
 const activeItem = computed(() => {
@@ -67,9 +67,12 @@ const activeItem = computed(() => {
   const role = userStore.currentUser?.role;
 
   if (role === 'ORGANIZER') {
-    // If organizer is on /admin or /admin/events, highlight "My Events"
-    if (currentPath.startsWith("/admin/events") || currentPath === "/admin") {
+    
+    if (currentPath.startsWith("/admin/events")) {
       return "my-events";
+    }
+    else if (currentPath === "/admin") {
+      return "dashboard";
     }
   } else if (role === 'ADMIN') {
     if (currentPath.startsWith("/admin/events")) {
