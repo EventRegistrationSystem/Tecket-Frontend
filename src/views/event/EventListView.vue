@@ -118,42 +118,46 @@
         <div v-else-if="error" class="text-center mt-5 text-danger">
           Data loading failed, please try again later!
         </div>
-        <div v-else class="row justify-content-center">
+        <div v-else class="row">
+          <!-- Grid View -->
           <div
-            class="card col-4 m-3 card-fixed-width"
+            class="col-md-4 mb-4" 
             v-for="event in sortedEvents"
             :key="event.id"
             v-if="viewMode === 'grid'"
           >
-            <router-link :to="{ name: 'EventDetail', params: { id: event.id } }">
-              <img
-                :src="event.banner || defaultBanner"
-                class="card-img-top"
-                alt="img"
-              />
-            </router-link>
-            <div class="card-body">
-              <!-- Keep router-link around the name -->
-              <router-link
-                :to="{ name: 'EventDetail', params: { id: event.id } }"
-                class="link-warning"
-              >
-                <h5 class="card-title">{{ event.name }}</h5>
+            <div class="card h-100 event-grid-card">
+              <router-link :to="{ name: 'EventDetail', params: { id: event.id } }">
+                <img
+                  :src="event.banner || defaultBanner"
+                  class="card-img-top event-grid-card-img"
+                  alt="Event Banner"
+                />
               </router-link>
-              <!-- Keep start date -->
-              <p class="card-text">Start: {{ formatDate(event.startDateTime) }}</p>
-              <!-- Removed description, location, and price -->
+              <div class="card-body d-flex flex-column">
+                <router-link
+                  :to="{ name: 'EventDetail', params: { id: event.id } }"
+                  class="text-decoration-none"
+                >
+                  <h5 class="card-title event-grid-title mb-2">{{ event.name }}</h5>
+                </router-link>
+                <p class="card-text event-grid-date-time mb-0">
+                  <small>{{ formatDate(event.startDateTime, 'date') }} at {{ formatDate(event.startDateTime, 'time') }}</small>
+                </p>
+              </div>
             </div>
           </div>
 
-          <table class="table" v-if="viewMode === 'list'">
-            <!-- Use router-link instead of a tag -->
+          <!-- List View -->
+          <table class="table table-hover" v-if="viewMode === 'list'">
             <thead>
               <tr>
-                <th scope="col">Event name</th>
-                <th scope="col">Description</th>
-                <th scope="col">Activity</th>
-                <th scope="col">Price</th>
+                <th scope="col">Event Name</th>
+                <th scope="col">Date</th>
+                <th scope="col">Time</th>
+                <th scope="col">Location</th>
+                <th scope="col">Event Type</th>
+                <th scope="col">Organizer</th>
               </tr>
             </thead>
             <tbody>
@@ -163,10 +167,17 @@
                 style="cursor: pointer"
                 @click="navigateToDetails(event.id)"
               >
-                <th scope="row">{{ event.name }}</th>
-                <td>{{ event.description }}</td>
-                <td>{{ event.activity }}</td>
-                <td>{{ event.price }}</td>
+                <th scope="row" class="fw-semibold text-primary">{{ event.name }}</th>
+                <td>{{ formatDate(event.startDateTime, 'date') }}</td>
+                <td>
+                  {{ formatDate(event.startDateTime, 'time') }}
+                  <span v-if="event.endDateTime && formatDate(event.startDateTime, 'time') !== formatDate(event.endDateTime, 'time')">
+                    - {{ formatDate(event.endDateTime, 'time') }}
+                  </span>
+                </td>
+                <td>{{ event.location || 'Online' }}</td>
+                <td>{{ event.eventType || 'General' }}</td>
+                <td>{{ getOrganizerName(event.organizer) }}</td>
               </tr>
             </tbody>
           </table>
@@ -223,10 +234,9 @@ const filterCriteria = ref({
   maxPrice: Infinity
 });
 
-const defaultBanner = "https://placehold.co/288x180?text=Event"; // Changed to placehold.co and simplified text
+const defaultBanner = "https://placehold.co/288x180?text=Event";
 const userStore = useUserStore();
 
-// Asynchronously fetch the activity list data with token
 onMounted(async () => {
   try {
     const token = userStore.accessToken || localStorage.getItem("accessToken");
@@ -242,12 +252,7 @@ onMounted(async () => {
       throw new Error(`Request failed with status code：${res.status}`);
     }
     const json = await res.json();
-    // { success: true, data: { events: [...], pagination: { ... } } }
     events.value = json.data.events;
-    console.log("Get Active List Success, Filter Criteria：", {
-      search: searchText.value,
-      ...filterCriteria.value
-    });
   } catch (err) {
     console.error("Error getting list of events：", err);
     error.value = err.message || "make a mistake";
@@ -287,7 +292,6 @@ const sortedEvents = computed(() => {
 const showFilter = ref(false);
 const closeFilter = () => (showFilter.value = false);
 
-// Processing filter condition applications
 const handleApplyFilter = (criteria) => {
   filterCriteria.value = {
     selectedActivity: criteria.selectedActivity || "",
@@ -297,9 +301,29 @@ const handleApplyFilter = (criteria) => {
   closeFilter();
 };
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr, type) => {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleString();
+  const date = new Date(dateStr);
+  if (type === 'date') {
+    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  } else if (type === 'time') {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return date.toLocaleString();
+};
+
+const getOrganizerName = (organizer) => {
+  if (!organizer) return 'N/A';
+  if (typeof organizer === 'string') {
+    try {
+      const parsedOrganizer = JSON.parse(organizer);
+      return `${parsedOrganizer.firstName || ''} ${parsedOrganizer.lastName || ''}`.trim() || 'N/A';
+    } catch (e) {
+      console.error("Failed to parse organizer JSON string:", organizer, e);
+      return 'N/A';
+    }
+  }
+  return `${organizer.firstName || ''} ${organizer.lastName || ''}`.trim() || 'N/A';
 };
 </script>
 
@@ -313,12 +337,43 @@ const formatDate = (dateStr) => {
 .pl-custom {
   padding-left: 2%;
 }
-.card-fixed-width {
-  width: 18rem;
-}
 
 .btn.active {
   background-color: #007bff;
   color: white;
+}
+
+/* Grid Card Styling */
+.event-grid-card {
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
+  background-color: #fff; /* Light background for card */
+}
+
+.event-grid-card:hover {
+  transform: translateY(-5px);
+}
+
+.event-grid-card-img {
+  height: 180px;
+  object-fit: cover;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.event-grid-card .card-body {
+  padding: 1rem;
+}
+
+.event-grid-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333; /* Dark text for light background */
+}
+
+.event-grid-date-time {
+  font-size: 0.85rem;
+  color: #555; /* Slightly lighter dark text */
 }
 </style>
