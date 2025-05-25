@@ -44,7 +44,7 @@ httpClient.interceptors.response.use(
 
     // Check for 401 Unauthorized and if it's not a retry already,
     // and not the refresh token request itself that failed with 401 (to avoid infinite loop)
-    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh-token') {
+    if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh-token' && originalRequest.url !== '/auth/login') {
       originalRequest._retry = true; // Mark as retried to prevent infinite loops
 
       try {
