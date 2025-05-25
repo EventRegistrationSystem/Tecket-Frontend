@@ -210,16 +210,11 @@ const fetchAndSetEvents = async () => {
     if (filterCriteria.value.location) {
       apiParams.location = filterCriteria.value.location;
     }
-    // Add pagination params
-    // apiParams.page = currentPage.value;
-    // apiParams.limit = itemsPerPage.value;
-
-    const responseData = await fetchEvents(apiParams); 
     
+    const responseData = await fetchEvents(apiParams, { isPublicView: true }); // Pass isPublicView option
     
     if (responseData && Array.isArray(responseData.events)) {
         events.value = responseData.events;
-        // pagination.value = responseData.pagination; // Store pagination 
     } else {
         events.value = []; 
         console.warn("Unexpected API response structure from fetchEvents service:", responseData);
@@ -305,7 +300,7 @@ function navigateToDetails(itemId) {
 
 <style scoped>
 .bg-custom {
-  background-color: #e9ecef; /* Slightly darker light gray */
+  background-color: #fff; /* White background for the page content area */
   min-height: 100vh;
 }
 .font-custom {

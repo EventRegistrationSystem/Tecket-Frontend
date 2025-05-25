@@ -178,7 +178,7 @@ export default {
   async mounted() {
     this.isLoading = true;
     try {
-      const response = await fetchEvents({ limit: 3 }); 
+      const response = await fetchEvents({ limit: 3 }, { isPublicView: true }); 
       this.events = response.events; 
     } catch (err) {
       this.error = "Failed to load events.";

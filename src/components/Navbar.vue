@@ -1,6 +1,5 @@
-<!-- src/components/Navbar.vue -->
 <template>
-  <nav class="navbar --bs-warning-bg-subtle">
+  <nav class="navbar navbar-custom-bg">
     <div class="container-fluid">
 
       <router-link to="/" class="navbar-brand d-flex align-items-center">
@@ -150,14 +149,13 @@ function goToProfile() {
 // Log out, clear store and jump to login
 async function logOut() {
   try {
-    await logoutUser(); // Call the API service
+    await logoutUser(); 
   } catch (error) {
     console.error('Logout API call failed:', error);
-    // Even if API call fails, proceed to clear client-side session
   } finally {
-    userStore.clearUserSession(); // Use the comprehensive clear action
-    isUserMenuOpen.value = false; // Close menu
-    router.push('/signIn'); // Redirect to login
+    userStore.clearUserSession(); 
+    isUserMenuOpen.value = false; 
+    router.push('/'); 
   }
 }
 </script>
@@ -165,5 +163,10 @@ async function logOut() {
 <style scoped>
 #brandName {
   font-family: 'LogoFont';
+}
+
+.navbar-custom-bg {
+  background-color: #f8f9fa; 
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
 }
 </style>
