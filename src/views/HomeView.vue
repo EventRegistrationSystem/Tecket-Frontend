@@ -34,26 +34,13 @@
   </div>
   <div>
     <h4 style="font-family: 'Font'" class="fw-bold pt-5 ms-5">
-      Explore Our Latest Event
+      Upcoming Events
     </h4>
-
-    <div class="input-group row ps-5 mt-4">
-      <div class="col-4" style="padding-left: 2%">
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Search"
-          aria-label="Search"
-          aria-describedby="addon-wrapping"
-        />
-      </div>
-      <div class="col-4"></div>
-    </div>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center mt-5">
       <p>Loading events...</p>
-      <!-- You can replace this with a spinner component if you have one -->
+      <!-- Spinner -->
       <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
@@ -118,9 +105,9 @@
         <div style="display: flex" class="mt-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
