@@ -89,10 +89,10 @@ const totalParticipantsInOrganizerEvents = computed(() => {
 const statsData = computed(() => {
   if (currentUser.value?.role === 'ADMIN') {
     return [
-      { title: 'Total Events (Published)', value: totalEventsCount.value, bgColor: 'bg-primary', icon: 'pi pi-calendar' },
+      { title: 'Total Published Events', value: totalEventsCount.value, bgColor: 'bg-primary', icon: 'pi pi-calendar' }, // Changed title
       { title: 'Total Registrations', value: totalRegistrationsCount.value, bgColor: 'bg-success', icon: 'pi pi-user-plus' },
       { title: 'Total Users', value: totalUsersCount.value, bgColor: 'bg-warning', icon: 'pi pi-users' },
-      { title: 'Published Events', value: publishedEventsCount.value, bgColor: 'bg-info', icon: 'pi pi-check-circle' }
+      { title: 'Upcoming Events', value: upcomingEventsCount.value, bgColor: 'bg-info', icon: 'pi pi-clock' } // Changed from Published Events
     ]
   } else if (currentUser.value?.role === 'ORGANIZER') {
     return [
@@ -191,15 +191,14 @@ const getStatusClass = status => {
             <div class="bg-white rounded shadow-sm overflow-hidden">
               <div class="p-3">
                 <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <p class="fs-6 text-muted">{{ stat.title }}</p>
-                    <p class="fs-2 fw-bold text-dark mt-1">{{ stat.value }}</p>
-                  </div>
-                  <div :class="stat.bgColor + ' text-white p-3 rounded'">
-                    <i :class="stat.icon + ' fs-4'"></i>
-                  </div>
+                <div>
+                  <p class="fs-6 text-muted mb-1">{{ stat.title }}</p>
+                  <p class="fs-3 fw-bold text-dark mt-0">{{ stat.value }}</p>
                 </div>
-                <!-- Removed "since last month" change indicator for simplification -->
+                <div :class="stat.bgColor + ' text-white p-2 rounded'">
+                  <i :class="stat.icon + ' fs-5'"></i>
+                </div>
+              </div>
               </div>
             </div>
           </div>
