@@ -24,7 +24,7 @@ const routes = [
   },
 
   // Registration routes
-  // Note: These routes should ideally be protected or managed by a flow guard
+  // These routes shoud be protected or managed by a flow guard
   // to prevent direct access to later steps without completing earlier ones.
   // This can be handled by checking registrationStore.currentStep or similar.
   {
@@ -41,13 +41,13 @@ const routes = [
   },
   {
     path: "/register/questions",
-    name: "Questionnaire", // Used in PersonalInfoFormView.vue (presumably)
+    name: "Questionnaire", // Used in PersonalInfoFormView.vue 
     component: () => import("@/views/registration/QuestionnaireFormView.vue"),
     // meta: { requiresAuth: false }
   },
   {
     path: "/register/review",
-    name: "ReviewRegistration", // used in QuestionnaireFormView.vue (presumably)
+    name: "ReviewRegistration", // used in QuestionnaireFormView.vue
     component: () => import("@/views/registration/ReviewFormView.vue"),
     // meta: { requiresAuth: false }
   },
@@ -151,42 +151,6 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
 
-  // -- Ticket Management Routes (Admin) --
-  // {
-  //   path: "/admin/events/:eventId/tickets", // Tickets for a specific event
-  //   name: "AdminEventTickets",  
-  //   component: () => import("@/views/admin/Tickets/TicketsManagement.vue"),
-  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  // },
-  // {
-  //   path: "/admin/events/:eventId/tickets/create",
-  //   name: "AdminEventTicketCreate",  
-  //   component: () => import("@/views/admin/Tickets/TicketTypeCreate.vue"),
-  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  // },
-  // {
-  //   path: "/admin/events/:eventId/tickets/edit/:ticketId", // Corrected path for clarity
-  //   name: "AdminEventTicketEdit",  
-  //   component: () => import("@/views/admin/Tickets/TicketTypeEdit.vue"),
-  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  // },
-
-  // -- Questionnaire Management Routes (Admin) --
-  {
-    path: "/admin/questionnaires", // Changed from /admin/Questionnaire
-    name: "AdminQuestionnaireList",
-    component: () =>
-      import("@/views/admin/Questionnaire/QuestionnaireList.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-  {
-    path: "/admin/events/:eventId/questionnaire", // View questionnaire for a specific event
-    name: "AdminViewEventQuestionnaire",
-    component: () =>
-      import("@/views/admin/Questionnaire/ViewQuestionnaire.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-
   // -- User Profile & Management (Authenticated User) --
   {
     path: "/user/profile",
@@ -195,14 +159,14 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: "/user/management", // This might be same as profile or for specific user settings
+    path: "/user/management",
     name: "UserManagement",
     component: () => import("@/views/user/userManagementView.vue"),
     meta: { requiresAuth: true }
   },
   {
     path: "/user/events",
-    name: "UserEvents", // Registered events, etc.
+    name: "UserEvents",
     component: () => import("@/views/user/userEventView.vue"),
     meta: { requiresAuth: true }
   },
@@ -217,10 +181,10 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore();
   const isAuthenticated = userStore.isAuthenticated;
-  const userRole = userStore.currentUser?.role; // Assumes user object in store has role
+  const userRole = userStore.currentUser?.role;
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-  const requiredRoles = to.meta.roles; // Array of roles if specified
+  const requiredRoles = to.meta.roles; // Array of roles (if specified)
 
   if (requiresAuth && !isAuthenticated) {
     // If route requires auth and user is not authenticated, redirect to login

@@ -57,24 +57,6 @@
             <div v-if="showMap" ref="mapContainer" class="mt-2 map-container"></div>
           </div>
 
-          <!-- Price Range Section -->
-          <div class="mb-3">
-            <label class="form-label">Price Range</label>
-            <div class="row">
-              <div class="col">
-                <input type="number" class="form-control" v-model="minPrice" placeholder="Min Price" />
-                <div v-if="errors.minPrice" class="text-danger mt-1">
-                  {{ errors.minPrice }}
-                </div>
-              </div>
-              <div class="col">
-                <input type="number" class="form-control" v-model="maxPrice" placeholder="Max Price" />
-                <div v-if="errors.maxPrice" class="text-danger mt-1">
-                  {{ errors.maxPrice }}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         <!-- Modal Footer -->
         <div class="modal-footer">
@@ -103,27 +85,26 @@ const emit = defineEmits(["closeFilter", "applyFilter"]);
 // Activity options data
 const activities = ref([
   {
-    name: "Sport",
-    image: new URL("@/assets/Sport.png", import.meta.url).href,
+    name: "SPORTS", // Matches backend enum
+    image: new URL("@/assets/Sport.png", import.meta.url).href, // Assuming Sport.png is suitable
   },
   {
-    name: "Music",
-    image: new URL("@/assets/Music.png", import.meta.url).href,
+    name: "MUSICAL", // Matches backend enum
+    image: new URL("@/assets/Music.png", import.meta.url).href, // Assuming Music.png is suitable
   },
   {
-    name: "Art",
-    image: new URL("@/assets/Art.png", import.meta.url).href,
+    name: "SOCIAL", // Matches backend enum
+    image: new URL("@/assets/Art.png", import.meta.url).href, // Placeholder, ideally a "Social.png"
   },
   {
-    name: "Food",
-    image: new URL("@/assets/Food.png", import.meta.url).href,
+    name: "VOLUNTEERING", // Matches backend enum
+    image: new URL("@/assets/Food.png", import.meta.url).href, // Placeholder, ideally a "Volunteering.png"
   },
 ]);
 
 const selectedActivity = ref("");
 const location = ref("");
-const minPrice = ref("");
-const maxPrice = ref("");
+// minPrice and maxPrice removed
 
 // Map state variables
 const showMap = ref(false);
@@ -136,8 +117,7 @@ const isGeocoding = ref(false);
 const errors = ref({
   selectedActivity: "",
   location: "",
-  minPrice: "",
-  maxPrice: "",
+  // minPrice and maxPrice errors removed
 });
 
 // Update selected activity and clear its error
@@ -150,13 +130,10 @@ const selectActivity = (activityName) => {
 const clearFilter = () => {
   selectedActivity.value = "";
   location.value = "";
-  minPrice.value = "";
-  maxPrice.value = "";
+  // minPrice and maxPrice reset removed
   errors.value = {
     selectedActivity: "",
     location: "",
-    minPrice: "",
-    maxPrice: "",
   };
   if (marker.value && mapInstance.value) {
     mapInstance.value.removeLayer(marker.value);
@@ -169,40 +146,17 @@ const validateInputs = () => {
   let isValid = true;
   errors.value.selectedActivity = "";
   errors.value.location = "";
-  errors.value.minPrice = "";
-  errors.value.maxPrice = "";
-  const hasMinPrice = minPrice.value !== "";
-  const hasMaxPrice = maxPrice.value !== "";
-  if (hasMinPrice) {
-    if (isNaN(minPrice.value) || Number(minPrice.value) < 0) {
-      errors.value.minPrice = "Min price must be non-negative.";
-      isValid = false;
-    }
-  }
-  if (hasMaxPrice) {
-    if (isNaN(maxPrice.value) || Number(maxPrice.value) < 0) {
-      errors.value.maxPrice = "Max price must be non-negative.";
-      isValid = false;
-    }
-  }
-  if (hasMinPrice && hasMaxPrice && Number(minPrice.value) > Number(maxPrice.value)) {
-    errors.value.minPrice = "Min price cannot exceed max price.";
-    errors.value.maxPrice = "Max price cannot be less than min price.";
-    isValid = false;
-  }
+  // Price validation removed
   return isValid;
 };
 
 // Apply filter conditions and emit to parent if valid
 const applyFilter = async () => {
-  if (validateInputs()) {
-    const min = minPrice.value === "" ? 0 : Number(minPrice.value);
-    const max = maxPrice.value === "" ? Infinity : Number(maxPrice.value);
+  if (validateInputs()) { // validateInputs now only checks activity and location if needed
     emit("applyFilter", {
       selectedActivity: selectedActivity.value,
       location: location.value,
-      minPrice: min,
-      maxPrice: max,
+      // minPrice and maxPrice removed from emitted data
     });
     closeFilter();
   }

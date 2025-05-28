@@ -147,19 +147,36 @@ onMounted(async () => {
         originalTicketTypes.value = JSON.parse(JSON.stringify(ticketTypes.value));
 
         const fetchedQuestions = await fetchEventQuestions(eventId);
-        questions.value = fetchedQuestions.map(q => ({
-          id: q.id,
-          text: q.question.questionText || '',
-          type: q.question.questionType || 'text',
-          required: q.isRequired || false,
-          options: q.question.options ? (typeof q.question.options === 'string' ? JSON.parse(q.question.options) : q.question.options) : ['Option 1'],
-          hasMaxLength: q.question.validationRules?.maxLength !== undefined,
-          maxLength: q.question.validationRules?.maxLength || 255,
-          order: q.displayOrder !== undefined ? q.displayOrder : 0,
-          category: q.question.category || '',
-          backendQuestionId: q.questionId,
-          backendEventQuestionId: q.id,
-        }));
+        questions.value = fetchedQuestions.map(q => {
+          let frontendQuestionType = (q.question.questionType || 'text').toLowerCase();
+          if (frontendQuestionType === 'dropdown') {
+            frontendQuestionType = 'select'; // Map backend DROPDOWN to frontend 'select'
+          } else if (frontendQuestionType === 'checkbox') {
+            frontendQuestionType = 'checkbox'; // Map backend CHECKBOX to frontend 'checkbox'
+          }
+
+          let frontendOptions = ['Option 1']; // Default
+          if ((q.question.questionType === 'DROPDOWN' || q.question.questionType === 'CHECKBOX') && Array.isArray(q.question.options)) {
+            frontendOptions = q.question.options.map(opt => opt.optionText);
+          } else if (q.question.options) {
+            // Fallback for other potential structures or existing data
+            frontendOptions = typeof q.question.options === 'string' ? JSON.parse(q.question.options) : q.question.options;
+          }
+
+          return {
+            id: q.id, // This is EventQuestion.id
+            text: q.question.questionText || '',
+            type: frontendQuestionType,
+            required: q.isRequired || false,
+            options: frontendOptions,
+            hasMaxLength: q.question.validationRules?.maxLength !== undefined,
+            maxLength: q.question.validationRules?.maxLength || 255,
+            order: q.displayOrder !== undefined ? q.displayOrder : 0,
+            category: q.question.category || '',
+            backendQuestionId: q.question.id, // This is Question.id
+            backendEventQuestionId: q.id, // Redundant, same as id above
+          };
+        });
         originalQuestions.value = JSON.parse(JSON.stringify(questions.value));
       }
     } catch (err) {
@@ -186,7 +203,8 @@ const validateForm = () => {
   if (!eventForm.value.startDate) errors.value.startDate = 'Event start date is required';
   if (!eventForm.value.endDate) errors.value.endDate = 'Event end date is required';
   if (eventForm.value.startDate && new Date(eventForm.value.startDate) < new Date()) {
-    errors.value.startDate = 'Event start date must be in the future';
+    // Allow past dates for editing, but not for new events if that's a requirement (not strictly enforced here)
+    // errors.value.startDate = 'Event start date must be in the future'; 
   }
   if (eventForm.value.startDate && eventForm.value.endDate && new Date(eventForm.value.endDate) < new Date(eventForm.value.startDate)) {
     errors.value.endDate = 'End date must be after start date';
@@ -223,10 +241,15 @@ const validateForm = () => {
   }
 
   if (questions.value.length === 0) {
-    errors.value.questions = 'At least one question is required.';
+    // Making questions optional for now, can be changed if needed
+    // errors.value.questions = 'At least one question is required.';
   } else {
     questions.value.forEach((q, index) => {
       if (!q.text.trim()) errors.value[`question_${index}_text`] = `Question ${index + 1} text is required.`;
+      // Add validation for options if question type is 'select' (DROPDOWN) or 'checkbox'
+      if ((q.type === 'select' || q.type === 'checkbox') && (!q.options || q.options.length === 0 || q.options.some(opt => !opt.trim()))) {
+        errors.value[`question_${index}_options`] = `Question ${index + 1} (${q.type === 'select' ? 'Dropdown' : 'Checkboxes'}) must have at least one non-empty option.`;
+      }
     });
   }
 
@@ -235,10 +258,10 @@ const validateForm = () => {
 
 const addTicketType = () => {
   ticketTypes.value.push({
-    id: Date.now(),
+    id: Date.now(), // Temporary ID for v-for key, backend will assign real ID
     name: '',
     price: 0.0,
-    quantity: 1, // Corresponds to the API field quantityTotal
+    quantity: 1, 
     description: '',
     salesStart: '',
     salesEnd: '',
@@ -249,7 +272,6 @@ const removeTicketType = (index) => {
   ticketTypes.value.splice(index, 1)
 }
 
-// Save events: APIs are called according to the editing or creation mode respectively
 const saveEvent = async () => {
   if (!validateForm()) {
     const firstErrorKey = Object.keys(errors.value)[0];
@@ -266,79 +288,94 @@ const saveEvent = async () => {
   }
   saving.value = true;
   try {
-    let currentEventId = eventId;
-
-    const eventDataForPayload = {
-      name: eventForm.value.name,
-      description: eventForm.value.description,
-      location: eventForm.value.location,
+    const eventPayload = {
+      ...eventForm.value,
       capacity: Number(eventForm.value.capacity),
-      eventType: eventForm.value.eventType,
-      isFree: eventForm.value.isFree,
       startDateTime: combineDateAndTime(eventForm.value.startDate, eventForm.value.startTime),
       endDateTime: combineDateAndTime(eventForm.value.endDate, eventForm.value.endTime),
-
       tickets: eventForm.value.isFree ? [] : ticketTypes.value.map(ticket => ({
+        id: isEditMode.value && ticket.id && !isNaN(parseInt(ticket.id)) && Number.isInteger(Number(ticket.id)) ? Number(ticket.id) : undefined, // Send ID only if it's a valid existing ID
         name: ticket.name,
         price: Number(ticket.price),
         quantityTotal: Number(ticket.quantity),
         description: ticket.description,
-        salesStart: new Date(combineDateAndTime(ticket.salesStart, '00:00:00')),
-        salesEnd: new Date(combineDateAndTime(ticket.salesEnd, '23:59:59')),
+        salesStart: ticket.salesStart ? combineDateAndTime(ticket.salesStart, '00:00:00') : null,
+        salesEnd: ticket.salesEnd ? combineDateAndTime(ticket.salesEnd, '23:59:59') : null,
       })),
-      questions: questions.value.map((q, index) => ({
-        questionText: q.text,
-        isRequired: q.required,
-        displayOrder: q.order !== undefined ? q.order : index + 1,
-      })),
+      questions: questions.value.map((q, index) => {
+        let backendQuestionType = q.type.toUpperCase();
+        if (q.type === 'select') {
+          backendQuestionType = 'DROPDOWN';
+        } else if (q.type === 'textarea') {
+          backendQuestionType = 'TEXT'; 
+        } else if (q.type === 'radio') { 
+          // 'radio' on frontend maps to 'DROPDOWN' on backend for single choice
+          backendQuestionType = 'DROPDOWN';
+        } else if (q.type === 'checkbox') {
+          // 'checkbox' on frontend maps to 'CHECKBOX' on backend
+          backendQuestionType = 'CHECKBOX';
+        }
+        // Other types like date, email, number might map to TEXT or specific backend types
+
+        const questionPayload = {
+          eventQuestionId: isEditMode.value && q.backendEventQuestionId ? q.backendEventQuestionId : undefined,
+          questionId: isEditMode.value && q.backendQuestionId ? q.backendQuestionId : undefined,
+          questionText: q.text,
+          questionType: backendQuestionType,
+          isRequired: q.required,
+          displayOrder: q.order !== undefined ? q.order : index + 1,
+        };
+
+        if ((backendQuestionType === 'DROPDOWN' || backendQuestionType === 'CHECKBOX') && Array.isArray(q.options)) {
+          questionPayload.options = q.options.map((optText, optIndex) => ({
+            // For existing options, we might need to send their IDs if backend supports option updates by ID
+            optionText: optText,
+            displayOrder: optIndex + 1,
+          }));
+        }
+        return questionPayload;
+      }),
     };
+    
+    // Remove address fields if not provided, to avoid sending empty strings if backend expects null/omitted
+    if (!eventPayload.address) delete eventPayload.address;
+    if (!eventPayload.city) delete eventPayload.city;
+    if (!eventPayload.state) delete eventPayload.state;
+    if (!eventPayload.zipCode) delete eventPayload.zipCode;
+    if (!eventPayload.imageUrl) delete eventPayload.imageUrl;
 
-    // Log the data being sent to the API for debugging
-    console.log('Frontend Date/Time Inputs:', {
-      startDate: eventForm.value.startDate,
-      startTime: eventForm.value.startTime,
-      endDate: eventForm.value.endDate,
-      endTime: eventForm.value.endTime,
-    });
-    console.log('Combined ISO DateTimes:', {
-      startDateTime: eventDataForPayload.startDateTime,
-      endDateTime: eventDataForPayload.endDateTime,
-    });
-    console.log('Event Payload being sent:', JSON.stringify(eventDataForPayload, null, 2));
 
-    // Call the corresponding API based on the mode
-    if (!isEditMode.value) {
-      // Create mode - backend handles tickets and questions in one call
-      const createdEvent = await createEvent(eventDataForPayload);
-      currentEventId = createdEvent.id;
+    console.log('Event Payload being sent:', JSON.stringify(eventPayload, null, 2));
+
+    if (isEditMode.value) {
+      await updateEvent(eventId, eventPayload);
     } else {
-      // Update mode - backend handles tickets and questions in one call
-      await updateEvent(eventId, eventDataForPayload);
+      await createEvent(eventPayload);
     }
-
-    // The backend's updateEvent and createEvent methods now handle the monolithic update
-    // of tickets and questions based on the arrays provided in eventDataForPayload
-    router.push('/admin/events')
+    router.push('/admin/events');
   } catch (err) {
-    console.error('Error saving event:', err)
-    // A more detailed error message can be added here
+    console.error('Error saving event:', err.message ? err.message : JSON.stringify(err));
+    errors.value.submit = err.message || 'Failed to save event. Please try again.';
+    if (err.errors) { // If backend sends specific field errors
+        Object.assign(errors.value, err.errors);
+    }
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const cancelForm = () => {
   router.push('/admin/events')
 }
 
 const addQuestion = () => {
-  const newId = Date.now()
+  const newId = `new_${Date.now()}` // Temporary frontend ID
   questions.value.push({
-    id: newId,
+    id: newId, 
     text: '',
-    type: 'text',
+    type: 'text', 
     required: false,
-    options: ['Option 1'],
+    options: ['Option 1'], 
     hasMaxLength: false,
     maxLength: 255,
     order: questions.value.length + 1,
@@ -524,7 +561,7 @@ const removeOption = (question, optionIndex) => {
               <div v-for="(ticket, index) in ticketTypes" :key="ticket.id" class="bg-light p-3 rounded mb-3">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                   <h3 class="h6 mb-0">Ticket Type {{ index + 1 }}</h3>
-                  <button v-if="ticketTypes.length > 1" @click="removeTicketType(index)" type="button"
+                  <button v-if="ticketTypes.length > 1 || !isEditMode" @click="removeTicketType(index)" type="button"
                     class="btn btn-link text-danger p-0">
                     <i class="pi pi-trash"></i>
                   </button>
@@ -592,7 +629,10 @@ const removeOption = (question, optionIndex) => {
                   Add Question
                 </button>
               </div>
-              <div v-if="!questions.length" class="alert alert-light text-center">
+              <div v-if="!questions.length && errors.questions" class="alert alert-danger">
+                 {{ errors.questions }}
+              </div>
+              <div v-if="!questions.length && !errors.questions" class="alert alert-light text-center">
                 <div class="text-muted mb-2">
                   <i class="pi pi-list-alt"></i>
                 </div>
@@ -628,8 +668,9 @@ const removeOption = (question, optionIndex) => {
                   <!-- Question content -->
                   <div class="p-3">
                     <div class="mb-3">
-                      <label class="form-label">Question Text</label>
-                      <input v-model="question.text" type="text" placeholder="Enter your question" class="form-control" />
+                      <label :for="`question_text_${index}`" class="form-label">Question Text</label>
+                      <input :id="`question_text_${index}`" :name="`question_${index}_text`" v-model="question.text" type="text" placeholder="Enter your question" class="form-control" :class="{ 'is-invalid': errors[`question_${index}_text`] }" />
+                       <div v-if="errors[`question_${index}_text`]" class="invalid-feedback">{{ errors[`question_${index}_text`] }}</div>
                     </div>
                     <div class="mb-3">
                       <label class="form-label">Question Type</label>
@@ -646,8 +687,9 @@ const removeOption = (question, optionIndex) => {
                     </div>
                   </div>
                   <!-- Options for select, radio or checkbox types -->
-                  <div v-if="['select', 'radio', 'checkbox'].includes(question.type)" class="mb-3 p-3">
+                  <div v-if="['select', 'radio', 'checkbox'].includes(question.type)" class="mb-3 p-3 border-top">
                     <label class="form-label mb-2">Options</label>
+                     <div v-if="errors[`question_${index}_options`]" class="alert alert-danger small p-2">{{ errors[`question_${index}_options`] }}</div>
                     <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="d-flex align-items-center mb-2">
                       <input v-model="question.options[optionIndex]" type="text" placeholder="Option text" class="form-control" />
                       <button @click="removeOption(question, optionIndex)" type="button" class="btn btn-link text-danger ms-2"
@@ -661,7 +703,7 @@ const removeOption = (question, optionIndex) => {
                     </button>
                   </div>
                   <!-- Additional settings -->
-                  <div class="d-flex align-items-center gap-3">
+                  <div class="p-3 border-top d-flex align-items-center gap-3">
                     <label class="d-flex align-items-center mb-0">
                       <input v-model="question.required" type="checkbox" class="form-check-input me-2" />
                       <span class="small text-dark">Required</span>
@@ -685,6 +727,9 @@ const removeOption = (question, optionIndex) => {
             </div>
             
             <!-- Form Action Buttons -->
+             <div v-if="errors.submit" class="alert alert-danger">
+                {{ errors.submit }}
+            </div>
             <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3">
               <button @click="cancelForm" type="button" class="btn btn-outline-secondary">Cancel</button>
               <button type="submit" class="btn btn-primary d-flex align-items-center" :disabled="saving">

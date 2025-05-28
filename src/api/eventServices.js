@@ -1,16 +1,30 @@
 import httpClient from './httpClient';
+import { useUserStore } from '@/store/userStore'; // Import userStore
 
 // The handleResponse helper is no longer needed as Axios and its interceptors handle this.
 
 /**
  * Fetch paginated list of events
  * @param {Object} params - Query parameters (page, limit, filters)
+ * @param {Object} options - Additional options like { isPublicView: boolean }
  * @returns {Promise<{ events: Array, pagination: Object }>} 
  */
-export const fetchEvents = async (params = {}) => {
+export const fetchEvents = async (params = {}, options = {}) => {
+  const userStore = useUserStore();
+  const currentUser = userStore.currentUser;
+  let requestParams = { ...params };
+  let axiosConfig = { params: requestParams };
+
+  if (options.isPublicView) {
+    axiosConfig.publicView = true; // Signal httpClient to not send Auth header
+    // Do NOT add myEvents=true for public views
+  } else if (currentUser && currentUser.role === 'ORGANIZER') {
+    requestParams.myEvents = true; // Add myEvents flag for organizers' private views
+  }
+
   try {
-    const response = await httpClient.get('/events', { params });
-    return response.data.data; 
+    const response = await httpClient.get('/events', axiosConfig);
+    return response.data.data;
   } catch (error) {
     console.error('Error fetching events:', error.response?.data?.message || error.message);
     throw error.response?.data || error;

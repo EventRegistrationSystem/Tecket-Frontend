@@ -128,7 +128,12 @@
                 :key="response.eventQuestionId"
               >
                 <strong>{{ response.questionText }}:</strong>
-                {{ response.responseText }}
+                <span v-if="response.questionType === 'CHECKBOX'">
+                  {{ formatCheckboxResponse(response.responseText) }}
+                </span>
+                <span v-else>
+                  {{ response.responseText }}
+                </span>
               </li>
             </ul>
           </div>
@@ -263,6 +268,19 @@ const formatDate = (dateStr, includeTime = true) => {
     options.minute = "2-digit";
   }
   return new Date(dateStr).toLocaleDateString(undefined, options);
+};
+
+const formatCheckboxResponse = (responseText) => {
+  try {
+    const parsed = JSON.parse(responseText);
+    if (Array.isArray(parsed)) {
+      return parsed.join(', ');
+    }
+  } catch (e) {
+    // Fallback if parsing fails
+    console.error("Failed to parse checkbox response:", responseText, e);
+  }
+  return responseText; 
 };
 
 const goBackToStep = (stepName) => {
