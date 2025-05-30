@@ -19,7 +19,7 @@ const eventId = isEditMode.value ? parseInt(route.params.id) : null
 const loading = ref(true)
 const saving = ref(false)
 const activeTab = ref('basic')
-const questions = ref([]) 
+const questions = ref([])
 
 // form status, fields are initialised by default in create mode
 // Split the original date field into startDate and endDate.
@@ -37,7 +37,6 @@ const eventForm = ref({
   zipCode: '',
   organizer: '',
   capacity: 100,
-  status: 'PUBLISHED',
   imageUrl: '',
   eventType: '',
   isFree: false,
@@ -126,10 +125,8 @@ onMounted(async () => {
           state: eventData.state || '',
           zipCode: eventData.zipCode || '',
           organizer: typeof eventData.organizer === 'object' && eventData.organizer !== null ? `${eventData.organizer.firstName} ${eventData.organizer.lastName}` : eventData.organizer || '',
-          
+
           capacity: eventData.capacity || 100,
-          // status: eventData.status || 'Upcoming',
-          // imageUrl: eventData.imageUrl || 'https://placehold.co/600x400/eee/ccc?text=Event+Image',
           eventType: eventData.eventType || '',
           isFree: eventData.isFree || false,
         };
@@ -183,7 +180,7 @@ onMounted(async () => {
       console.error('Error fetching event data:', err);
       Object.assign(eventForm.value, {
         name: '', description: '', startDate: '', endDate: '', startTime: '', endTime: '',
-        location: '', address: '', city: '', state: '', zipCode: '', organizer: '', capacity: 100, status: 'Upcoming', eventType: '', isFree: false,
+        location: '', address: '', city: '', state: '', zipCode: '', organizer: '', capacity: 100, eventType: '', isFree: false,
       });
       ticketTypes.value = [];
       questions.value = [];
@@ -261,7 +258,7 @@ const addTicketType = () => {
     id: Date.now(), // Temporary ID for v-for key, backend will assign real ID
     name: '',
     price: 0.0,
-    quantity: 1, 
+    quantity: 1,
     description: '',
     salesStart: '',
     salesEnd: '',
@@ -307,8 +304,8 @@ const saveEvent = async () => {
         if (q.type === 'select') {
           backendQuestionType = 'DROPDOWN';
         } else if (q.type === 'textarea') {
-          backendQuestionType = 'TEXT'; 
-        } else if (q.type === 'radio') { 
+          backendQuestionType = 'TEXT';
+        } else if (q.type === 'radio') {
           // 'radio' on frontend maps to 'DROPDOWN' on backend for single choice
           backendQuestionType = 'DROPDOWN';
         } else if (q.type === 'checkbox') {
@@ -336,7 +333,7 @@ const saveEvent = async () => {
         return questionPayload;
       }),
     };
-    
+
     // Remove address fields if not provided, to avoid sending empty strings if backend expects null/omitted
     if (!eventPayload.address) delete eventPayload.address;
     if (!eventPayload.city) delete eventPayload.city;
@@ -357,7 +354,7 @@ const saveEvent = async () => {
     console.error('Error saving event:', err.message ? err.message : JSON.stringify(err));
     errors.value.submit = err.message || 'Failed to save event. Please try again.';
     if (err.errors) { // If backend sends specific field errors
-        Object.assign(errors.value, err.errors);
+      Object.assign(errors.value, err.errors);
     }
   } finally {
     saving.value = false;
@@ -371,11 +368,11 @@ const cancelForm = () => {
 const addQuestion = () => {
   const newId = `new_${Date.now()}` // Temporary frontend ID
   questions.value.push({
-    id: newId, 
+    id: newId,
     text: '',
-    type: 'text', 
+    type: 'text',
     required: false,
-    options: ['Option 1'], 
+    options: ['Option 1'],
     hasMaxLength: false,
     maxLength: 255,
     order: questions.value.length + 1,
@@ -406,7 +403,7 @@ const removeOption = (question, optionIndex) => {
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
-      
+
       <div v-else>
         <!-- Form Header -->
         <div class="mb-4">
@@ -417,7 +414,7 @@ const removeOption = (question, optionIndex) => {
             {{ isEditMode ? 'Update the details of your event' : 'Fill out the form to create a new event' }}
           </p>
         </div>
-        
+
         <!-- Forms Tab Navigation -->
         <div class="bg-white rounded shadow-sm mb-4">
           <div class="d-flex border-bottom overflow-auto">
@@ -441,7 +438,7 @@ const removeOption = (question, optionIndex) => {
             </button>
           </div>
         </div>
-        
+
         <!-- Form content -->
         <div class="bg-white rounded shadow-sm p-4">
           <form @submit.prevent="saveEvent">
@@ -467,15 +464,16 @@ const removeOption = (question, optionIndex) => {
                 <label class="form-label">
                   Location <span class="text-danger">*</span>
                 </label>
-                <input v-model="eventForm.location" type="text" placeholder="Enter venue or location" class="form-control"
-                  :class="{ 'is-invalid': errors.location }" />
+                <input v-model="eventForm.location" type="text" placeholder="Enter venue or location"
+                  class="form-control" :class="{ 'is-invalid': errors.location }" />
                 <div v-if="errors.location" class="invalid-feedback">
                   {{ errors.location }}
                 </div>
               </div>
               <div class="mb-3">
                 <p class="small fst-italic text-muted">
-                  The address information helps attendees locate your event. It will be displayed on the event details page.
+                  The address information helps attendees locate your event. It will be displayed on the event details
+                  page.
                 </p>
               </div>
               <div class="row g-3">
@@ -508,31 +506,19 @@ const removeOption = (question, optionIndex) => {
                   <input v-model="eventForm.endTime" type="time" class="form-control" />
                 </div>
               </div>
-              <div class="row g-3 mt-3">
-                <div class="col-12 col-md-6">
-                  <label class="form-label">Organizer</label>
-                  <input v-model="eventForm.organizer" type="text" placeholder="Organizing company or person"
-                    class="form-control" />
-                </div>
+              <div class="mb-3 mt-3">
+                <label class="form-label">Organizer</label>
+                <input v-model="eventForm.organizer" type="text" placeholder="Organizing company or person"
+                  class="form-control" />
               </div>
-              <div class="row g-3 mt-3">
-                <div class="col-12 col-md-6">
-                  <label class="form-label">
-                    Capacity <span class="text-danger">*</span>
-                  </label>
-                  <input v-model="eventForm.capacity" type="number" min="1" class="form-control"
-                    :class="{ 'is-invalid': errors.capacity }" />
-                  <div v-if="errors.capacity" class="invalid-feedback">
-                    {{ errors.capacity }}
-                  </div>
-                </div>
-                <div class="col-12 col-md-6">
-                  <label class="form-label">Status</label>
-                  <select v-model="eventForm.status" class="form-select">
-                    <option value="PUBLISHED">PUBLISHED</option>
-                    <option value="Draft">Draft</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
+              <div class="mb-3">
+                <label class="form-label">
+                  Capacity <span class="text-danger">*</span>
+                </label>
+                <input v-model="eventForm.capacity" type="number" min="1" class="form-control"
+                  :class="{ 'is-invalid': errors.capacity }" />
+                <div v-if="errors.capacity" class="invalid-feedback">
+                  {{ errors.capacity }}
                 </div>
               </div>
               <div class="mb-3">
@@ -552,7 +538,7 @@ const removeOption = (question, optionIndex) => {
                 <label class="form-check-label" for="isFreeEvent">This is a free event</label>
               </div>
             </div>
-            
+
             <!-- Tickets Tab -->
             <div v-if="activeTab === 'tickets'" class="mb-4">
               <div v-if="errors.tickets" class="alert alert-danger">
@@ -569,35 +555,51 @@ const removeOption = (question, optionIndex) => {
                 <div class="row g-3 mb-3">
                   <div class="col-12 col-md-6">
                     <label class="form-label">Name</label>
-                    <input v-model="ticket.name" type="text" placeholder="e.g. General Admission" class="form-control" />
+                    <input v-model="ticket.name" type="text" placeholder="e.g. General Admission"
+                      class="form-control" />
                   </div>
                   <div class="col-12 col-md-6">
                     <label class="form-label">Description</label>
-                    <input v-model="ticket.description" type="text" placeholder="Brief description" class="form-control" />
+                    <input v-model="ticket.description" type="text" placeholder="Brief description"
+                      class="form-control" />
                   </div>
                 </div>
                 <div class="row g-3 mb-3">
                   <div class="col-12 col-md-6">
                     <label class="form-label">Price ($) <span class="text-danger">*</span></label>
-                    <input :id="`ticket_price_${index}`" :name="`ticket_${index}_price`" v-model.number="ticket.price" type="number" step="0.01" min="0" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_price`] }" />
-                    <div v-if="errors[`ticket_${index}_price`]" class="invalid-feedback">{{ errors[`ticket_${index}_price`] }}</div>
+                    <input :id="`ticket_price_${index}`" :name="`ticket_${index}_price`" v-model.number="ticket.price"
+                      type="number" step="0.01" min="0" class="form-control"
+                      :class="{ 'is-invalid': errors[`ticket_${index}_price`] }" />
+                    <div v-if="errors[`ticket_${index}_price`]" class="invalid-feedback">{{
+                      errors[`ticket_${index}_price`] }}</div>
                   </div>
                   <div class="col-12 col-md-6">
                     <label class="form-label">Quantity Available <span class="text-danger">*</span></label>
-                    <input :id="`ticket_quantity_${index}`" :name="`ticket_${index}_quantity`" v-model.number="ticket.quantity" type="number" min="1" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_quantity`] }" />
-                    <div v-if="errors[`ticket_${index}_quantity`]" class="invalid-feedback">{{ errors[`ticket_${index}_quantity`] }}</div>
+                    <input :id="`ticket_quantity_${index}`" :name="`ticket_${index}_quantity`"
+                      v-model.number="ticket.quantity" type="number" min="1" class="form-control"
+                      :class="{ 'is-invalid': errors[`ticket_${index}_quantity`] }" />
+                    <div v-if="errors[`ticket_${index}_quantity`]" class="invalid-feedback">{{
+                      errors[`ticket_${index}_quantity`] }}</div>
                   </div>
                 </div>
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label :for="`ticket_salesStart_${index}`" class="form-label">Sales Start Date <span class="text-danger">*</span></label>
-                    <input :id="`ticket_salesStart_${index}`" :name="`ticket_${index}_salesStart`" type="date" v-model="ticket.salesStart" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_salesStart`] }">
-                    <div v-if="errors[`ticket_${index}_salesStart`]" class="invalid-feedback">{{ errors[`ticket_${index}_salesStart`] }}</div>
+                    <label :for="`ticket_salesStart_${index}`" class="form-label">Sales Start Date <span
+                        class="text-danger">*</span></label>
+                    <input :id="`ticket_salesStart_${index}`" :name="`ticket_${index}_salesStart`" type="date"
+                      v-model="ticket.salesStart" class="form-control"
+                      :class="{ 'is-invalid': errors[`ticket_${index}_salesStart`] }">
+                    <div v-if="errors[`ticket_${index}_salesStart`]" class="invalid-feedback">{{
+                      errors[`ticket_${index}_salesStart`] }}</div>
                   </div>
                   <div class="col-md-6">
-                    <label :for="`ticket_salesEnd_${index}`" class="form-label">Sales End Date <span class="text-danger">*</span></label>
-                    <input :id="`ticket_salesEnd_${index}`" :name="`ticket_${index}_salesEnd`" type="date" v-model="ticket.salesEnd" class="form-control" :class="{ 'is-invalid': errors[`ticket_${index}_salesEnd`] }">
-                    <div v-if="errors[`ticket_${index}_salesEnd`]" class="invalid-feedback">{{ errors[`ticket_${index}_salesEnd`] }}</div>
+                    <label :for="`ticket_salesEnd_${index}`" class="form-label">Sales End Date <span
+                        class="text-danger">*</span></label>
+                    <input :id="`ticket_salesEnd_${index}`" :name="`ticket_${index}_salesEnd`" type="date"
+                      v-model="ticket.salesEnd" class="form-control"
+                      :class="{ 'is-invalid': errors[`ticket_${index}_salesEnd`] }">
+                    <div v-if="errors[`ticket_${index}_salesEnd`]" class="invalid-feedback">{{
+                      errors[`ticket_${index}_salesEnd`] }}</div>
                   </div>
                 </div>
               </div>
@@ -610,11 +612,12 @@ const removeOption = (question, optionIndex) => {
               <div class="alert alert-warning">
                 <h4 class="h6">Important Note</h4>
                 <p class="small">
-                  Make sure the total number of tickets available does not exceed the event capacity. Current capacity: {{ eventForm.capacity }} attendees.
+                  Make sure the total number of tickets available does not exceed the event capacity. Current capacity:
+                  {{ eventForm.capacity }} attendees.
                 </p>
               </div>
             </div>
- 
+
             <!-- Questionnaire Tab -->
             <div v-if="activeTab === 'questionnaire'" class="mb-4">
               <div class="d-flex justify-content-between align-items-center mb-3">
@@ -630,7 +633,7 @@ const removeOption = (question, optionIndex) => {
                 </button>
               </div>
               <div v-if="!questions.length && errors.questions" class="alert alert-danger">
-                 {{ errors.questions }}
+                {{ errors.questions }}
               </div>
               <div v-if="!questions.length && !errors.questions" class="alert alert-light text-center">
                 <div class="text-muted mb-2">
@@ -646,7 +649,8 @@ const removeOption = (question, optionIndex) => {
                 </button>
               </div>
               <div v-else class="mb-4">
-                <div v-for="(question, index) in questions" :key="question.id" class="bg-white border rounded overflow-hidden mb-3">
+                <div v-for="(question, index) in questions" :key="question.id"
+                  class="bg-white border rounded overflow-hidden mb-3">
                   <!-- Question header -->
                   <div class="bg-light px-3 py-2 d-flex justify-content-between align-items-center border-bottom">
                     <div class="d-flex align-items-center">
@@ -669,31 +673,33 @@ const removeOption = (question, optionIndex) => {
                   <div class="p-3">
                     <div class="mb-3">
                       <label :for="`question_text_${index}`" class="form-label">Question Text</label>
-                      <input :id="`question_text_${index}`" :name="`question_${index}_text`" v-model="question.text" type="text" placeholder="Enter your question" class="form-control" :class="{ 'is-invalid': errors[`question_${index}_text`] }" />
-                       <div v-if="errors[`question_${index}_text`]" class="invalid-feedback">{{ errors[`question_${index}_text`] }}</div>
+                      <input :id="`question_text_${index}`" :name="`question_${index}_text`" v-model="question.text"
+                        type="text" placeholder="Enter your question" class="form-control"
+                        :class="{ 'is-invalid': errors[`question_${index}_text`] }" />
+                      <div v-if="errors[`question_${index}_text`]" class="invalid-feedback">{{
+                        errors[`question_${index}_text`] }}</div>
                     </div>
                     <div class="mb-3">
                       <label class="form-label">Question Type</label>
                       <select v-model="question.type" class="form-select">
                         <option value="text">Text Input</option>
-                        <option value="textarea">Text Area (long text)</option>
                         <option value="select">Dropdown</option>
-                        <option value="radio">Multiple Choice (single selection)</option>
                         <option value="checkbox">Checkboxes (multiple selection)</option>
-                        <option value="date">Date</option>
-                        <option value="email">Email</option>
-                        <option value="number">Number</option>
                       </select>
                     </div>
                   </div>
+
                   <!-- Options for select, radio or checkbox types -->
                   <div v-if="['select', 'radio', 'checkbox'].includes(question.type)" class="mb-3 p-3 border-top">
                     <label class="form-label mb-2">Options</label>
-                     <div v-if="errors[`question_${index}_options`]" class="alert alert-danger small p-2">{{ errors[`question_${index}_options`] }}</div>
-                    <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="d-flex align-items-center mb-2">
-                      <input v-model="question.options[optionIndex]" type="text" placeholder="Option text" class="form-control" />
-                      <button @click="removeOption(question, optionIndex)" type="button" class="btn btn-link text-danger ms-2"
-                        :disabled="question.options.length <= 1">
+                    <div v-if="errors[`question_${index}_options`]" class="alert alert-danger small p-2">{{
+                      errors[`question_${index}_options`] }}</div>
+                    <div v-for="(option, optionIndex) in question.options" :key="optionIndex"
+                      class="d-flex align-items-center mb-2">
+                      <input v-model="question.options[optionIndex]" type="text" placeholder="Option text"
+                        class="form-control" />
+                      <button @click="removeOption(question, optionIndex)" type="button"
+                        class="btn btn-link text-danger ms-2" :disabled="question.options.length <= 1">
                         <i class="pi pi-times"></i>
                       </button>
                     </div>
@@ -708,27 +714,19 @@ const removeOption = (question, optionIndex) => {
                       <input v-model="question.required" type="checkbox" class="form-check-input me-2" />
                       <span class="small text-dark">Required</span>
                     </label>
-                    <label v-if="question.type === 'text' || question.type === 'textarea'" class="d-flex align-items-center mb-0">
+                    <label v-if="question.type === 'text' || question.type === 'textarea'"
+                      class="d-flex align-items-center mb-0">
                       <input v-model="question.hasMaxLength" type="checkbox" class="form-check-input me-2" />
                       <span class="small text-dark">Set max length</span>
                     </label>
                   </div>
                 </div>
               </div>
-              <div class="alert alert-info">
-                <h4 class="h6 fw-semibold mb-1">Tips for Creating Questions</h4>
-                <ul class="list-disc list-inside small text-info">
-                  <li>Keep questions clear and concise</li>
-                  <li>Only make questions required if you absolutely need the information</li>
-                  <li>Use appropriate question types for the data you're collecting</li>
-                  <li>Consider the privacy implications of the data you collect</li>
-                </ul>
-              </div>
             </div>
-            
+
             <!-- Form Action Buttons -->
-             <div v-if="errors.submit" class="alert alert-danger">
-                {{ errors.submit }}
+            <div v-if="errors.submit" class="alert alert-danger">
+              {{ errors.submit }}
             </div>
             <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3">
               <button @click="cancelForm" type="button" class="btn btn-outline-secondary">Cancel</button>

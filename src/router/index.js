@@ -24,26 +24,21 @@ const routes = [
   },
 
   // Registration routes
-  // These routes shoud be protected or managed by a flow guard
-  // to prevent direct access to later steps without completing earlier ones.
-  // This can be handled by checking registrationStore.currentStep or similar.
+  // protected or managed by a flow guard to prevent direct access to later steps without completing earlier ones.
   {
     path: "/register/tickets", // linked from EventDetail
     name: "TicketSelection", // Used in EventDetailsView.vue and TicketSelectionFormView.vue
     component: () => import("@/views/registration/TicketSelectionFormView.vue"),
-    // meta: { requiresAuth: false } // Can be initiated by guest or logged-in user
   },
   {
     path: "/register/info",
     name: "PersonalInfo", // Used in TicketSelectionFormView.vue
     component: () => import("@/views/registration/PersonalInfoFormView.vue"),
-    // meta: { requiresAuth: false }
   },
   {
     path: "/register/questions",
     name: "Questionnaire", // Used in PersonalInfoFormView.vue 
     component: () => import("@/views/registration/QuestionnaireFormView.vue"),
-    // meta: { requiresAuth: false }
   },
   {
     path: "/register/review",

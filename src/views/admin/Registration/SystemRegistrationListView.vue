@@ -17,52 +17,23 @@
           <!-- Search & Filters -->
           <div class="d-flex flex-column flex-sm-row flex-wrap gap-3">
             <div class="position-relative">
-              <input
-                v-model="searchQuery"
-                @input="fetchRegistrations"
-                type="text"
-                placeholder="Search name or email..."
-                class="form-control"
-                style="padding-left: 2.5rem; max-width: 16rem;"
-              />
+              <input v-model="searchQuery" type="text" placeholder="Search name or email..." class="form-control"
+                style="padding-left: 2.5rem; max-width: 20rem;" />
               <i class="pi pi-search position-absolute text-muted" style="left: 1rem; top: 0.75rem;"></i>
             </div>
-            <select
-              v-model="statusFilter"
-              @change="fetchRegistrations"
-              class="form-select"
-              style="max-width: 16rem;"
-            >
+            <select v-model="statusFilter" class="form-select" style="max-width: 16rem;">
               <option value="">All Statuses</option>
               <option value="CONFIRMED">Confirmed</option>
               <option value="PENDING">Pending</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
             <!-- Additional Filters -->
-            <input
-              v-model="eventIdFilter"
-              @input="fetchRegistrations"
-              type="number"
-              placeholder="Filter by Event ID"
-              class="form-control"
-              style="max-width: 10rem;"
-            />
-             <input
-              v-model="userIdFilter"
-              @input="fetchRegistrations"
-              type="number"
-              placeholder="Filter by User ID"
-              class="form-control"
-              style="max-width: 10rem;"
-            />
-             <input
-              v-model="participantIdFilter"
-              @input="fetchRegistrations"
-              type="number"
-              placeholder="Filter by Participant ID"
-              class="form-control"
-              style="max-width: 12rem;"
-            />
+            <input v-model="eventIdFilter" type="number" placeholder="Filter by Event ID" class="form-control"
+              style="max-width: 10rem;" />
+            <input v-model="userIdFilter" type="number" placeholder="Filter by User ID" class="form-control"
+              style="max-width: 10rem;" />
+            <input v-model="participantIdFilter" type="number" placeholder="Filter by Participant ID"
+              class="form-control" style="max-width: 12rem;" />
             <!-- Add Ticket ID filter if needed later -->
           </div>
           <!-- Placeholder for potential future buttons like "Export" -->
@@ -77,7 +48,7 @@
               <tr class="bg-light border-bottom">
                 <th class="px-3 py-2 text-start fs-6 text-muted">Reg. ID</th>
                 <th class="px-3 py-2 text-start fs-6 text-muted">Date</th>
-                 <th class="px-3 py-2 text-start fs-6 text-muted">Event Name</th> <!-- New Column -->
+                <th class="px-3 py-2 text-start fs-6 text-muted">Event Name</th> <!-- New Column -->
                 <th class="px-3 py-2 text-start fs-6 text-muted">Primary Registrant</th>
                 <th class="px-3 py-2 text-start fs-6 text-muted">Email</th>
                 <th class="px-3 py-2 text-start fs-6 text-muted text-center"># Attendees</th>
@@ -99,7 +70,7 @@
               <tr v-for="reg in registrations" :key="reg.registrationId" class="border-bottom">
                 <td class="px-3 py-2 text-dark">{{ reg.registrationId }}</td>
                 <td class="px-3 py-2 text-dark">{{ formatDate(reg.registrationDate) }}</td>
-                 <td class="px-3 py-2 text-dark">{{ reg.eventName }}</td> <!-- Display Event Name -->
+                <td class="px-3 py-2 text-dark">{{ reg.eventName }}</td> <!-- Display Event Name -->
                 <td class="px-3 py-2 fw-medium text-dark">{{ reg.primaryParticipantName }}</td>
                 <td class="px-3 py-2 text-muted">{{ reg.primaryParticipantEmail }}</td>
                 <td class="px-3 py-2 text-dark text-center">{{ reg.numberOfAttendees }}</td>
@@ -110,11 +81,8 @@
                 </td>
                 <td class="px-3 py-2 text-dark">{{ formatCurrency(reg.totalAmountPaid) }}</td>
                 <td class="px-3 py-2 text-center">
-                  <router-link
-                    :to="{ name: 'AdminRegistrationDetail', params: { registrationId: reg.registrationId } }"
-                    class="btn btn-link text-primary p-0"
-                    title="View Details"
-                  >
+                  <router-link :to="{ name: 'AdminRegistrationDetail', params: { registrationId: reg.registrationId } }"
+                    class="btn btn-link text-primary p-0" title="View Details">
                     <i class="pi pi-eye"></i>
                   </router-link>
                   <!-- Add other action buttons here if needed later, e.g., edit, cancel -->
@@ -125,35 +93,27 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="!loading && pagination.totalPages > 1" class="px-3 py-2 d-flex align-items-center justify-content-between border-top">
+        <div v-if="!loading && pagination.totalPages > 1"
+          class="px-3 py-2 d-flex align-items-center justify-content-between border-top">
           <div class="fs-6 text-muted">
             Showing
             <span class="fw-medium">{{ (pagination.currentPage - 1) * pagination.limit + 1 }}</span> to
-            <span class="fw-medium">{{ Math.min(pagination.currentPage * pagination.limit, pagination.totalCount) }}</span> of
+            <span class="fw-medium">{{ Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)
+              }}</span> of
             <span class="fw-medium">{{ pagination.totalCount }}</span> results
           </div>
           <div class="d-flex gap-2">
-            <button
-              @click="changePage(pagination.currentPage - 1)"
-              :disabled="pagination.currentPage === 1"
-              class="btn btn-outline-secondary btn-sm"
-            >
+            <button @click="changePage(pagination.currentPage - 1)" :disabled="pagination.currentPage === 1"
+              class="btn btn-outline-secondary btn-sm">
               Previous
             </button>
             <!-- Simple page number display, can be enhanced if needed -->
-            <button
-              v-for="page in pagination.totalPages"
-              :key="page"
-              @click="changePage(page)"
-              :class="['btn btn-sm', page === pagination.currentPage ? 'btn-primary' : 'btn-outline-secondary bg-light']"
-            >
+            <button v-for="page in pagination.totalPages" :key="page" @click="changePage(page)"
+              :class="['btn btn-sm', page === pagination.currentPage ? 'btn-primary' : 'btn-outline-secondary bg-light']">
               {{ page }}
             </button>
-            <button
-              @click="changePage(pagination.currentPage + 1)"
-              :disabled="pagination.currentPage === pagination.totalPages"
-              class="btn btn-outline-secondary btn-sm"
-            >
+            <button @click="changePage(pagination.currentPage + 1)"
+              :disabled="pagination.currentPage === pagination.totalPages" class="btn btn-outline-secondary btn-sm">
               Next
             </button>
           </div>
@@ -224,14 +184,29 @@ onMounted(() => {
   fetchRegistrations()
 })
 
+// Debounce logic
+let debounceTimer;
+const debounce = (func, delay) => {
+  return (...args) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+};
+
+const debouncedFetchRegistrations = debounce(() => {
+  pagination.value.currentPage = 1;
+  fetchRegistrations();
+}, 500);
+
 // Watch filters and pagination changes
 watch([searchQuery, statusFilter, eventIdFilter, userIdFilter, participantIdFilter], () => {
-  pagination.value.currentPage = 1; // Reset to first page on filter change
-  fetchRegistrations();
+  debouncedFetchRegistrations();
 });
 
 watch(() => pagination.value.currentPage, () => {
-    fetchRegistrations(); // Fetch when page changes
+  fetchRegistrations(); // Fetch when page changes, no debounce needed here
 });
 
 
@@ -271,8 +246,4 @@ const getStatusClass = (status) => {
 
 </script>
 
-<style scoped>
-/* Add any component-specific styles here if needed */
-/* Ensure PrimeIcons are globally available or import them if needed */
-/* For example: @import 'primeicons/primeicons.css'; if not already in main.js or similar */
-</style>
+<style scoped></style>

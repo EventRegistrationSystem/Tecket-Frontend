@@ -1,30 +1,24 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
-
-// Introducing interface methods from the API layer, based on code implementations you provide
-import { fetchEventDetails } from '@/api/eventServices.js'
+import { fetchEventDetails, updateEventStatus } from '@/api/eventServices.js'
 
 const route = useRoute()
 const router = useRouter()
-// Get the event id from the route parameter
 const eventId = parseInt(route.params.id)
 
 const event = ref(null)
 const loading = ref(true)
 const activeTab = ref('tickets')
-
-// Initialise ticket types as empty array; wait for API response to update data
+const selectedStatus = ref('')
+const statusUpdateLoading = ref(false);
 const ticketTypes = ref([])
 
-onMounted(async () => {
+const loadEventDetails = async () => {
   try {
     loading.value = true
-
-    // Getting event details (internally using authFetch for authorised transfers)
     const fetchedEvent = await fetchEventDetails(eventId)
-    // If the interface returns null, set the default data to avoid page errors
     event.value = fetchedEvent || {
       id: eventId,
       name: 'Event not found',
@@ -35,16 +29,17 @@ onMounted(async () => {
       address: '',
       organizer: { firstName: '', lastName: '' },
       organizerContact: '',
-      status: '',
+      status: 'DRAFT', // Default to DRAFT if not found
       capacity: 100,
-      ticketsSold: 10,
+      ticketsSold: 0,
       revenue: '',
       imageUrl: '',
-      eventType: '',      
-      isFree: false       
+      eventType: '',
+      isFree: false
     }
 
-    // Populate ticketTypes from event.value.tickets
+    selectedStatus.value = event.value.status // Initialize dropdown with current status
+
     if (event.value && event.value.tickets) {
       ticketTypes.value = event.value.tickets.map(t => ({
         id: t.id,
@@ -59,45 +54,66 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error("Error fetching event data:", error)
-    // Setting the default data in case of error to prevent the page from reporting errors
     event.value = {
       id: eventId,
-      name: 'Event not found',
-      description: '',
-      startDateTime: '',
-      endDateTime: '',
-      location: '',
-      address: '',
-      organizer: { firstName: '', lastName: '' },
-      organizerContact: '',
-      status: '',
-      capacity: 0,
-      ticketsSold: 0,
-      revenue: '',
-      imageUrl: '',
-      eventType: '',      
-      isFree: false 
+      name: 'Error loading event',
+      description: 'Could not load event details.',
+      status: 'ERROR', // Indicate error status
+      startDateTime: '', endDateTime: '', location: '', address: '',
+      organizer: { firstName: '', lastName: '' }, organizerContact: '',
+      capacity: 0, ticketsSold: 0, revenue: '', imageUrl: '', eventType: '', isFree: false
     }
+    selectedStatus.value = event.value.status;
     ticketTypes.value = []
   } finally {
     loading.value = false
   }
-})
+};
+
+onMounted(loadEventDetails);
+
+const handleStatusUpdate = async () => {
+  if (!event.value || !selectedStatus.value) return;
+  if (selectedStatus.value === event.value.status) {
+    alert("The selected status is the same as the current status.");
+    return;
+  }
+
+  if (window.confirm(`Are you sure you want to change the event status to ${selectedStatus.value}?`)) {
+    statusUpdateLoading.value = true;
+    try {
+      const updatedEventData = await updateEventStatus(eventId, selectedStatus.value);
+      event.value.status = updatedEventData.status; // Update local event status
+      selectedStatus.value = updatedEventData.status; // Ensure dropdown reflects the new status
+      alert('Event status updated successfully!');
+    } catch (error) {
+      console.error('Failed to update event status:', error);
+      alert(error.message || 'Failed to update event status. Please check console for details.');
+      // Revert dropdown if update failed
+      selectedStatus.value = event.value.status;
+    } finally {
+      statusUpdateLoading.value = false;
+    }
+  }
+};
+
+watch(() => event.value?.status, (newStatus) => {
+  if (newStatus) {
+    selectedStatus.value = newStatus;
+  }
+});
 
 const editEvent = () => {
   router.push(`/admin/events/edit/${eventId}`)
 }
 
-// Function to navigate to edit event form with a specific tab active
 const editEventWithTab = (tabName) => {
   router.push({
     path: `/admin/events/edit/${eventId}`,
-    query: { tab: tabName } // Changed 'activeTab' to 'tab'
+    query: { tab: tabName }
   })
 }
 
-// Formatted date (en-US)
-// Add a validity judgement to ensure that the incoming date string is parsed correctly
 const formatDate = (dateString) => {
   if (!dateString) return ''
   const dateObj = new Date(dateString)
@@ -109,8 +125,6 @@ const formatDate = (dateString) => {
   })
 }
 
-// Formatting time (en-US)
-// Add validity judgement to ensure that incoming date strings are parsed correctly
 const formatTime = (dateString) => {
   if (!dateString) return ''
   const dateObj = new Date(dateString)
@@ -121,25 +135,27 @@ const formatTime = (dateString) => {
   })
 }
 
-// Helper function to format currency values
 const formatCurrency = (value) => {
   if (typeof value !== 'number') return '$0.00';
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'AUD' }).format(value);
 }
 
-// Returns the corresponding CSS class name based on the event state to set the text colour background
 const getStatusClass = (status) => {
-  switch (status) {
-    case 'Active':
+  switch (status?.toUpperCase()) { // Added toUpperCase for consistency
+    case 'ACTIVE': // Kept for potential future use or other contexts
       return 'bg-light text-success'
-    case 'Upcoming':
+    case 'UPCOMING': // Kept for potential future use
       return 'bg-light text-primary'
-    case 'Completed':
+    case 'COMPLETED':
       return 'bg-light text-dark'
-    case 'Cancelled':
+    case 'CANCELLED':
       return 'bg-light text-danger'
     case 'PUBLISHED':
       return 'bg-light text-primary'
+    case 'DRAFT':
+      return 'bg-light text-secondary' // Using Bootstrap's secondary for draft
+    case 'ERROR':
+      return 'bg-light text-danger'
     default:
       return 'bg-light text-dark'
   }
@@ -149,21 +165,18 @@ const getStatusClass = (status) => {
 <template>
   <AdminLayout>
     <div class="p-3">
-      <!-- load state -->
       <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height: 16rem;">
         <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
-      <div v-else>
-        <!-- Back button -->
+      <div v-else-if="event">
         <button @click="router.push('/admin/events')" class="d-flex align-items-center text-primary mb-3" type="button">
           <i class="pi pi-arrow-left me-1"></i>
           Back to Events
         </button>
 
-        <!-- event header information -->
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between mb-4">
           <div>
             <h1 class="fs-2 fw-bold text-dark">{{ event.name }}</h1>
@@ -171,26 +184,36 @@ const getStatusClass = (status) => {
               <span :class="getStatusClass(event.status)" class="px-2 py-1 rounded-pill small fw-semibold me-2">
                 {{ event.status }}
               </span>
-              <!-- Date Formatting with startDateTime -->
               <span class="text-muted">{{ formatDate(event.startDateTime) }}</span>
             </div>
           </div>
-          <div class="mt-4 mt-md-0">
-            <button @click="editEvent" class="btn btn-primary" type="button">
+          <div class="mt-4 mt-md-0 d-flex align-items-center gap-2">
+            <select v-model="selectedStatus" class="form-select form-select-sm" style="width: auto;"
+              :disabled="statusUpdateLoading || event.status === 'ERROR'">
+              <option value="DRAFT">DRAFT</option>
+              <option value="PUBLISHED">PUBLISHED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+            <button @click="handleStatusUpdate" class="btn btn-outline-primary btn-sm"
+              :disabled="statusUpdateLoading || selectedStatus === event.status || event.status === 'ERROR'">
+              <span v-if="statusUpdateLoading" class="spinner-border spinner-border-sm" role="status"
+                aria-hidden="true"></span>
+              <i v-else class="pi pi-save me-1"></i>
+              Save Status
+            </button>
+            <button @click="editEvent" class="btn btn-primary btn-sm" type="button"
+              :disabled="event.status === 'ERROR'">
               <i class="pi pi-pencil me-2"></i>
               Edit Event
             </button>
           </div>
         </div>
 
-        <!-- Detailed content of the incident -->
         <div class="row g-4">
-          <!-- Left: Details and Tabs switching -->
           <div class="col-12 col-lg-8">
-            <!-- Event Pictures & Profile Cards -->
             <div class="bg-white rounded shadow-sm overflow-hidden mb-4">
-              <img :src="event.imageUrl || 'https://placehold.co/800x256?text=Event+Image'" :alt="event.name" class="w-100"
-                   style="height: 16rem; object-fit: cover;"> <!-- Added placeholder -->
+              <img :src="event.imageUrl || 'https://placehold.co/800x256?text=Event+Image'" :alt="event.name"
+                class="w-100" style="height: 16rem; object-fit: cover;">
               <div class="p-4">
                 <h2 class="fs-4 fw-semibold text-dark mb-3">About This Event</h2>
                 <p class="text-secondary mb-3">{{ event.description }}</p>
@@ -198,7 +221,6 @@ const getStatusClass = (status) => {
                 <div class="row g-4 mt-3">
                   <div class="col-12 col-md-6">
                     <h3 class="fs-6 fw-semibold text-muted mb-1">Date and Time</h3>
-                    <!-- Display event date and start-end time -->
                     <p class="text-dark mb-0">{{ formatDate(event.startDateTime) }}</p>
                     <p class="text-dark">
                       {{ formatTime(event.startDateTime) }} - {{ formatTime(event.endDateTime) }}
@@ -214,8 +236,8 @@ const getStatusClass = (status) => {
                   <div class="col-12 col-md-6">
                     <h3 class="fs-6 fw-semibold text-muted mb-1">Organizer</h3>
                     <p class="text-dark mb-0">
-                      <!-- Judgement based on organizer data type -->
-                      {{ typeof event.organizer === 'string' ? event.organizer : (event.organizer.firstName + ' ' + event.organizer.lastName) }}
+                      {{ typeof event.organizer === 'string' ? event.organizer : (event.organizer.firstName + ' ' +
+                        event.organizer.lastName) }}
                     </p>
                     <p class="text-muted">{{ event.organizerContact }}</p>
                   </div>
@@ -225,17 +247,15 @@ const getStatusClass = (status) => {
                     <p class="text-dark mb-1">{{ event.ticketsSold }} / {{ event.capacity }} tickets sold</p>
                     <div class="progress" style="height: 0.5rem;">
                       <div class="progress-bar bg-primary" role="progressbar"
-                           :style="{ width: (event.ticketsSold / event.capacity) * 100 + '%' }"
-                           aria-valuemin="0" aria-valuemax="100"></div>
+                        :style="{ width: (event.capacity > 0 ? (event.ticketsSold / event.capacity) * 100 : 0) + '%' }"
+                        aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                   </div>
-                  <!-- Event Type -->
                   <div class="col-12 col-md-6">
                     <h3 class="fs-6 fw-semibold text-muted mb-1">Event Type</h3>
                     <p class="text-dark mb-0">{{ event.eventType }}</p>
                   </div>
 
-                  <!-- Is Free? -->
                   <div class="col-12 col-md-6">
                     <h3 class="fs-6 fw-semibold text-muted mb-1">Price Type</h3>
                     <p class="text-dark mb-0">{{ event.isFree ? 'Free' : 'Paid' }}</p>
@@ -244,24 +264,21 @@ const getStatusClass = (status) => {
               </div>
             </div>
 
-            <!-- Tabs Navigation -->
             <div class="bg-white rounded shadow-sm overflow-hidden">
               <div class="d-flex border-bottom">
                 <button @click="activeTab = 'tickets'" type="button"
-                        class="px-3 py-2 fs-6 fw-semibold bg-light border-0 no-border-btn"
-                        :class="activeTab === 'tickets' ? 'text-primary' : 'text-muted'">
+                  class="px-3 py-2 fs-6 fw-semibold bg-light border-0 no-border-btn"
+                  :class="activeTab === 'tickets' ? 'text-primary' : 'text-muted'">
                   Tickets
                 </button>
                 <button @click="activeTab = 'questions'" type="button"
-                        class="px-3 py-2 fs-6 fw-semibold bg-light border-0 no-border-btn"
-                        :class="activeTab === 'questions' ? 'text-primary' : 'text-muted'">
+                  class="px-3 py-2 fs-6 fw-semibold bg-light border-0 no-border-btn"
+                  :class="activeTab === 'questions' ? 'text-primary' : 'text-muted'">
                   Questions
                 </button>
               </div>
 
-              <!-- Tab Content -->
               <div class="p-3">
-                <!-- Questions Tab -->
                 <div v-if="activeTab === 'questions'">
                   <h3 class="fs-5 fw-semibold mb-3">Event Questions</h3>
                   <div v-if="event && event.eventQuestions && event.eventQuestions.length">
@@ -275,14 +292,14 @@ const getStatusClass = (status) => {
                     <p class="text-muted">No questions have been configured for this event.</p>
                   </div>
                   <div class="mt-3 d-flex justify-content-end">
-                    <button @click="editEventWithTab('questionnaire')" class="btn btn-primary" type="button">
+                    <button @click="editEventWithTab('questionnaire')" class="btn btn-primary" type="button"
+                      :disabled="event.status === 'ERROR'">
                       <i class="pi pi-receipt me-2"></i>
                       Manage Questions
                     </button>
                   </div>
                 </div>
 
-                <!-- Tickets Tab -->
                 <div v-if="activeTab === 'tickets'">
                   <div class="table-responsive">
                     <table class="table table-hover">
@@ -305,27 +322,25 @@ const getStatusClass = (status) => {
                           <td class="px-3 py-2 text-dark">{{ ticket.quantityTotal }}</td>
                           <td class="px-3 py-2 text-dark">{{ formatDate(ticket.salesEnd) }}</td>
                         </tr>
+                        <tr v-if="!ticketTypes.length">
+                          <td colspan="6" class="text-center text-muted p-3">No tickets configured for this event.</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
                   <div class="mt-3 d-flex justify-content-end">
-                    <button 
-                    @click="editEventWithTab('tickets')" 
-                    class="btn btn-primary" type="button">
+                    <button @click="editEventWithTab('tickets')" class="btn btn-primary" type="button"
+                      :disabled="event.status === 'ERROR'">
                       <i class="pi pi-ticket me-2"></i>
                       Manage Tickets
                     </button>
                   </div>
                 </div>
-
-                <!-- Attendees tab has been removed -->
               </div>
             </div>
           </div>
 
-          <!-- Right: Quick Action -->
           <div class="col-12 col-lg-4">
-            <!-- Quick Stats -->
             <div class="bg-white rounded shadow-sm p-3 mb-4">
               <h2 class="fs-5 fw-semibold text-dark mb-3">Event Stats</h2>
               <div class="mb-3">
@@ -335,51 +350,46 @@ const getStatusClass = (status) => {
                 </div>
                 <div class="progress" style="height: 0.5rem;">
                   <div class="progress-bar bg-primary" role="progressbar"
-                       :style="{ width: (event.ticketsSold / event.capacity) * 100 + '%' }"
-                       aria-valuemin="0" aria-valuemax="100"></div>
+                    :style="{ width: (event.capacity > 0 ? (event.ticketsSold / event.capacity) * 100 : 0) + '%' }"
+                    aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
 
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="fs-6 text-muted">Revenue</span>
-                  <span class="fs-6 fw-semibold">{{ event.revenue }}</span>
+                  <span class="fs-6 fw-semibold">{{ formatCurrency(event.revenue) }}</span>
                 </div>
+                <!-- Placeholder for revenue progress or actual data -->
                 <div class="progress" style="height: 0.5rem;">
-                  <div class="progress-bar bg-success" role="progressbar" style="width: 45%;" aria-valuenow="45"
-                       aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0"
+                    aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
             </div>
 
-            <!-- Quick Operation Buttons -->
             <div class="bg-white rounded shadow-sm p-3 mb-4">
               <h2 class="fs-5 fw-semibold text-dark mb-3">Quick Actions</h2>
               <div class="d-grid gap-3">
-                <button class="btn btn-outline-primary w-100 d-flex align-items-center" type="button">
+                <button class="btn btn-outline-primary w-100 d-flex align-items-center" type="button"
+                  :disabled="event.status === 'ERROR'">
                   <i class="pi pi-share-alt me-2"></i>
                   Share Event
                 </button>
-                
-                <button class="btn btn-outline-success w-100 d-flex align-items-center" type="button">
+
+                <button class="btn btn-outline-success w-100 d-flex align-items-center" type="button"
+                  :disabled="event.status === 'ERROR'">
                   <i class="pi pi-chart-bar me-2"></i>
                   View Reports
-                </button>
-                <button v-if="event.status !== 'Cancelled'" class="btn btn-outline-danger w-100 d-flex align-items-center"
-                        type="button">
-                  <i class="pi pi-times-circle me-2"></i>
-                  Cancel Event
-                </button>
-                <button v-if="event.status === 'Cancelled'" 
-                class="btn btn-outline-success w-100 d-flex align-items-center"
-                        type="button">
-                  <i class="pi pi-check-circle me-2"></i>
-                  Reactivate Event
                 </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      <div v-else class="text-center p-5">
+        <h2 class="text-muted">Event not found or could not be loaded.</h2>
+        <button @click="router.push('/admin/events')" class="btn btn-primary mt-3">Back to Events List</button>
       </div>
     </div>
   </AdminLayout>

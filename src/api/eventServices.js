@@ -1,7 +1,6 @@
 import httpClient from './httpClient';
-import { useUserStore } from '@/store/userStore'; // Import userStore
+import { useUserStore } from '@/store/userStore';
 
-// The handleResponse helper is no longer needed as Axios and its interceptors handle this.
 
 /**
  * Fetch paginated list of events
@@ -17,7 +16,7 @@ export const fetchEvents = async (params = {}, options = {}) => {
 
   if (options.isPublicView) {
     axiosConfig.publicView = true; // Signal httpClient to not send Auth header
-    // Do NOT add myEvents=true for public views
+
   } else if (currentUser && currentUser.role === 'ORGANIZER') {
     requestParams.myEvents = true; // Add myEvents flag for organizers' private views
   }
@@ -27,6 +26,23 @@ export const fetchEvents = async (params = {}, options = {}) => {
     return response.data.data;
   } catch (error) {
     console.error('Error fetching events:', error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Update the status of an existing event
+ * @param {number|string} eventId
+ * @param {string} status - The new status (e.g., 'PUBLISHED', 'DRAFT', 'CANCELLED')
+ * @returns {Promise<Object>} Updated event data
+ */
+export const updateEventStatus = async (eventId, status) => {
+  try {
+    const response = await httpClient.patch(`/events/${eventId}/status`, { status });
+    // Backend response: { success: true, data: { ...updatedEvent } }
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating status for event ID ${eventId}:`, error.response?.data?.message || error.message);
     throw error.response?.data || error;
   }
 };
