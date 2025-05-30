@@ -131,41 +131,6 @@ const routes = [
     meta: { requiresAuth: true, roles: ['ADMIN'] }
   },
 
-  // -- Ticket Management Routes (Admin) --
-  // {
-  //   path: "/admin/events/:eventId/tickets", // Tickets for a specific event
-  //   name: "AdminEventTickets",  
-  //   component: () => import("@/views/admin/Tickets/TicketsManagement.vue"),
-  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  // },
-  // {
-  //   path: "/admin/events/:eventId/tickets/create",
-  //   name: "AdminEventTicketCreate",  
-  //   component: () => import("@/views/admin/Tickets/TicketTypeCreate.vue"),
-  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  // },
-  // {
-  //   path: "/admin/events/:eventId/tickets/edit/:ticketId", // Corrected path for clarity
-  //   name: "AdminEventTicketEdit",  
-  //   component: () => import("@/views/admin/Tickets/TicketTypeEdit.vue"),
-  //   meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  // },
-
-  // -- Questionnaire Management Routes (Admin) --
-  {
-    path: "/admin/questionnaires", // Changed from /admin/Questionnaire
-    name: "AdminQuestionnaireList",  
-    component: () =>
-      import("@/views/admin/Questionnaire/QuestionnaireList.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
-  {
-    path: "/admin/events/:eventId/questionnaire", // View questionnaire for a specific event
-    name: "AdminViewEventQuestionnaire",  
-    component: () =>
-      import("@/views/admin/Questionnaire/ViewQuestionnaire.vue"),
-    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
-  },
 
   // -- User Profile & Management (Authenticated User) --
   { 

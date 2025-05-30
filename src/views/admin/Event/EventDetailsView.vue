@@ -88,6 +88,10 @@ const editEvent = () => {
   router.push(`/admin/events/edit/${eventId}`)
 }
 
+const viewEventReport = () => {
+  router.push(`/admin/events/${eventId}/report`)
+}
+
 // Function to navigate to edit event form with a specific tab active
 const editEventWithTab = (tabName) => {
   router.push({
@@ -361,9 +365,9 @@ const getStatusClass = (status) => {
                   Share Event
                 </button>
                 
-                <button class="btn btn-outline-success w-100 d-flex align-items-center" type="button">
+                <button @click="viewEventReport" class="btn btn-outline-success w-100 d-flex align-items-center" type="button">
                   <i class="pi pi-chart-bar me-2"></i>
-                  View Reports
+                  View Report
                 </button>
                 <button v-if="event.status !== 'Cancelled'" class="btn btn-outline-danger w-100 d-flex align-items-center"
                         type="button">

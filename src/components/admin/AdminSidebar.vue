@@ -45,7 +45,7 @@ const menuItems = [
   { 
     id: "registrations", 
     label: "Registrations", 
-    icon: "pi pi-users", 
+    icon: "pi pi-list-check", 
     route: "/admin/registrations" 
   }
 ];

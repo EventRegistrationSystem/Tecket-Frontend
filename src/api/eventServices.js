@@ -18,6 +18,23 @@ export const fetchEvents = async (params = {}) => {
 };
 
 /**
+ * Fetch event report by ID
+ * @param {number|string} eventId
+ * @returns {Promise<Object>} Event report data
+ */
+export const getEventReport = async (eventId) => {
+  try {
+    
+    const response = await httpClient.get(`/events/${eventId}/report`);  
+    return response.data; 
+
+  } catch (error) {
+    console.error(`Error fetching event report for ID ${eventId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+/**
  * Fetch single event details by ID
  * @param {number|string} eventId
  * @returns {Promise<Object>} Event details
