@@ -130,9 +130,10 @@ watch(isAuthenticated, (newAuthStatus) => {
 function goToProfile() {
   if (!currentUser.value) return;
 
-  // If the user is an admin or organizer, redirect to the admin panel
-  if (currentUser.value.role === 'ADMIN' || currentUser.value.role === 'ORGANIZER') { // Example: ORGANIZER also goes to admin
+  // If the user is an admin or organizer, redirect to the admin dashboard
+  if (currentUser.value.role === 'ADMIN' || currentUser.value.role === 'ORGANIZER') {
     router.push('/admin');
+  } else {
     router.push('/user/profile');
   }
   isUserMenuOpen.value = false; // Close the user menu after navigation
