@@ -37,6 +37,7 @@ const loadEventDetails = async () => {
       eventType: '',
       isFree: false
     }
+
     selectedStatus.value = event.value.status // Initialize dropdown with current status
 
     if (event.value && event.value.tickets) {

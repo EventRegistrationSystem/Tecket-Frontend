@@ -99,11 +99,9 @@ function toggleUserMenu() {
 const loadUserProfile = async () => {
   if (isAuthenticated.value && !currentUser.value) { // Only fetch if authenticated and no user data
     try {
-      // Assuming fetchUserProfile gets the current logged-in user's profile
       // And that your userStore might be populated by login/register already.
-      // This fetch might be redundant if login/register already populates userStore.user fully.
-      // However, it's good for cases where the app loads and user is already authenticated (token in localStorage).
-      const userProfileData = await fetchUserProfile(); // This should ideally get the current user's profile
+      // However good for cases where the app loads and user is already authenticated (token in localStorage).
+      const userProfileData = await fetchUserProfile(); 
       if (userProfileData) {
         userStore.setUser(userProfileData); // Ensure store has a setUser action
       }

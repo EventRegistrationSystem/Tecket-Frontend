@@ -99,7 +99,7 @@
             Showing
             <span class="fw-medium">{{ (pagination.currentPage - 1) * pagination.limit + 1 }}</span> to
             <span class="fw-medium">{{ Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)
-            }}</span> of
+              }}</span> of
             <span class="fw-medium">{{ pagination.totalCount }}</span> results
           </div>
           <div class="d-flex gap-2">
@@ -246,8 +246,4 @@ const getStatusClass = (status) => {
 
 </script>
 
-<style scoped>
-/* Add any component-specific styles here if needed */
-/* Ensure PrimeIcons are globally available or import them if needed */
-/* For example: @import 'primeicons/primeicons.css'; if not already in main.js or similar */
-</style>
+<style scoped></style>

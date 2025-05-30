@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { useUserStore } from "@/store/userStore";
 import { useRouter } from 'vue-router';
+import { logoutUser } from "@/api/authServices.js";
 
 const router = useRouter();
 const userStore = useUserStore();

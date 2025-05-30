@@ -1,8 +1,5 @@
 import httpClient from './httpClient';
 
-// The BASE_URL is now configured within httpClient.js
-// The refreshAccessToken logic is now handled by httpClient's interceptors.
-
 /**
  * Logs in a user.
  * @param {string} email - The user's email.
@@ -12,14 +9,17 @@ import httpClient from './httpClient';
  */
 export const loginUser = async (email, password) => {
   try {
+
     const response = await httpClient.post('/auth/login', { email, password });
-    // Assuming backend returns { success: true, data: { user, accessToken } }
     return response.data.data;
+
   } catch (error) {
+
     // The interceptor might have already processed the error.
     // Re-throw a structured error or the error itself for the component to handle.
     console.error('Login failed:', error.response?.data?.message || error.message);
     throw error.response?.data || error;
+
   }
 };
 
@@ -35,12 +35,15 @@ export const loginUser = async (email, password) => {
  */
 export const registerUser = async (userData) => {
   try {
+
     const response = await httpClient.post('/auth/register', userData);
-    // Assuming backend returns { success: true, data: { user, accessToken } }
     return response.data.data;
+
   } catch (error) {
+
     console.error('Registration failed:', error.response?.data?.message || error.message);
     throw error.response?.data || error;
+
   }
 };
 
@@ -53,11 +56,14 @@ export const registerUser = async (userData) => {
 export const logoutUser = async () => {
   try {
     // The request interceptor in httpClient adds the Bearer token and sets withCredentials for /auth/logout.
+
     const response = await httpClient.post('/auth/logout');
-    // Assuming backend returns { success: true, message: 'Logged out successfully' }
     return response.data;
+
   } catch (error) {
+
     console.error('Logout failed:', error.response?.data?.message || error.message);
     throw error.response?.data || error;
+
   }
 };
