@@ -34,29 +34,49 @@
   </div>
   <div>
     <h4 style="font-family: 'Font'" class="fw-bold pt-5 ms-5">
-      Explore Our Latest Event
+      Upcoming Events
     </h4>
 
-    <div class="input-group row ps-5 mt-4">
-      <div class="col-4" style="padding-left: 2%">
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Search"
-          aria-label="Search"
-          aria-describedby="addon-wrapping"
-        />
+    <!-- Loading State -->
+    <div v-if="isLoading" class="text-center mt-5">
+      <p>Loading events...</p>
+      <!-- Spinner -->
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
-      <div class="col-4"></div>
     </div>
 
+    <!-- Error State -->
+    <div v-else-if="error" class="alert alert-danger mt-5 mx-5" role="alert">
+      {{ error }}
+    </div>
+    
+    <!-- Events Display -->
+    <div v-else-if="events && events.length > 0" class="container mt-5">
+      <div class="row">
+        <div v-for="event in events" :key="event.id" class="col-md-4 mb-4">
+          <div class="card h-100">
+            <img :src="event.imageUrl || 'https://via.placeholder.com/300x200?text=Event+Image'" class="card-img-top" alt="Event Image" style="height: 200px; object-fit: cover;">
+            <div class="card-body">
+              <h5 class="card-title">{{ event.name }}</h5>
+              <p class="card-text">{{ event.description ? event.description.substring(0, 100) + (event.description.length > 100 ? '...' : '') : 'No description available.' }}</p>
+              <router-link :to="'/eventDetail/' + event.id" class="btn btn-primary">View Details</router-link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Events State (after attempting to load) -->
     <h5
+      v-else
       style="font-family: 'Font'"
       class="fw-bold mt-5 ps-5 text-body-tertiary"
     >
-      No upcoming events
+      No upcoming events at the moment.
     </h5>
-    <div class="container text-center">
+
+    <div class="container text-center mt-4">
       <router-link to="/events">
         <button
           type="button"
@@ -68,50 +88,6 @@
       </router-link>
     </div>
   </div>
-  <section
-    class="d-flex align-items-center mt-4"
-    style="background-color: #ffe071"
-  >
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6 text-center text-lg-start">
-          <h1 class="fw-semibold">
-            Teket is for <strong>anyone</strong> who wants to make a difference!
-          </h1>
-          <p>
-            No matter your age or experience, we’re here to find your perfect
-            events.
-          </p>
-          <a href="#" class="btn btn-light btn-lg" style="font-family: 'Font';">Start your journey now</a>
-        </div>
-        <div class="col-lg-6">
-          <img
-            src="../assets/img2Home.jpg"
-            alt="Volunteers in action"
-            class="img-fluid hero-image pt-4 pb-4"
-          />
-        </div>
-      </div>
-    </div>
-  </section>
-  <section class="d-flex align-items-center" style="background-color: #ffe071">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6 text-center text-lg-start">
-          <img
-            src="../assets/img1Home.jpg"
-            alt="Volunteers in action"
-            class="img-fluid hero-image pt-4 pb-4 rounded"
-          />
-        </div>
-        <div class="col-lg-6">
-          <h1 class="fw-semibold">Join and start enjoying our offers</h1>
-          <p>Let Teket take care of your boring days.</p>
-          <a href="#" class="btn btn-light btn-lg" style="font-family: 'Font';">Create an account</a>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <div class="align-item-center pt-4 text-center">
     <h1>For organisations</h1>
@@ -129,9 +105,9 @@
         <div style="display: flex" class="mt-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
@@ -172,11 +148,31 @@
 <script>
 import navbar from "@/components/Navbar.vue";
 import Footer from "@/components/Footer.vue";
+import { fetchEvents } from "@/api/eventServices.js";
 
 export default {
   components: {
     navbar,
     Footer
+  },
+  data() {
+    return {
+      events: [],
+      isLoading: false,
+      error: null,
+    };
+  },
+  async mounted() {
+    this.isLoading = true;
+    try {
+      const response = await fetchEvents({ limit: 3 }, { isPublicView: true }); 
+      this.events = response.events; 
+    } catch (err) {
+      this.error = "Failed to load events.";
+      console.error("Error fetching events for homepage:", err);
+    } finally {
+      this.isLoading = false;
+    }
   },
 };
 </script>

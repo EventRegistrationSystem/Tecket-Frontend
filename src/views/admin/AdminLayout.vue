@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue'
-import AdminSidebar from '../components/admin/AdminSidebar.vue'
-import AdminNavbar from '../components/admin/AdminNavbar.vue'
-import AdminFooter from '../components/admin/AdminFooter.vue'
+import AdminSidebar from '@/components/admin/AdminSidebar.vue'
+import AdminNavbar from '@/components/admin/AdminNavbar.vue'
+import AdminFooter from '@/components/admin/AdminFooter.vue'
 
 const sidebarCollapsed = ref(false)
 

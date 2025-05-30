@@ -91,6 +91,9 @@
               <div class="col-md-4">
                 <label class="form-label">Zip/Postal Code</label>
                 <input type="text" class="form-control" v-model="currentParticipant.zipCode" />
+                <small v-if="formErrors[currentParticipantIndex]?.zipCode" class="text-danger">
+                  {{ formErrors[currentParticipantIndex]?.zipCode }}
+                </small>
               </div>
             </div>
              <div class="row g-3 mt-1">
@@ -229,6 +232,12 @@ const validateCurrentParticipantForm = () => {
     errors.lastName = 'Last name is required.';
     isValid = false;
   }
+
+  // Validate Zip/Postal Code
+  if (participant.zipCode && !/^\d{4}$/.test(participant.zipCode.trim())) {
+    errors.zipCode = 'Postcode must be exactly 4 digits.';
+    isValid = false;
+  }
   // Add more validation as needed for other fields (phone, DOB, address parts)
 
   formErrors.value[currentParticipantIndex.value] = errors;
@@ -251,6 +260,12 @@ const validateAllParticipantForms = () => {
     }
     if (!participantToValidate.lastName?.trim()) {
         errors.lastName = 'Last name is required.'; allValid = false;
+    }
+
+    // Validate Zip/Postal Code for each participant
+    if (participantToValidate.zipCode && !/^\d{4}$/.test(participantToValidate.zipCode.trim())) {
+        errors.zipCode = 'Postcode must be exactly 4 digits.';
+        allValid = false;
     }
     formErrors.value[i] = errors; // Store errors for display if needed
   }
