@@ -1,9 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
-import { usersMockData } from '@/mock/usersMock.js'
-import { fetchAllUsersData,deleteUserbyID } from '@/api/userServices'
+import AdminLayout from '@/views/admin/AdminLayout.vue'
+import { fetchAllUsers,deleteUserByID } from '@/api/userServices'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -14,7 +13,7 @@ const sortOrder = ref('asc')
 let usersData = ref([])
 
 onMounted(async () => {
-  usersData.value = await fetchAllUsersData();
+  usersData.value = await fetchAllUsers();
 })
 
 const getRoleText = (role) => {
@@ -78,7 +77,7 @@ const editUser = (userId) => {
 const deleteUser = (userId) => {
   if (confirm('Are you sure you want to delete this user?')) {
     usersData.value = usersData.value.filter(user => user.id !== userId)
-    deleteUserbyID(userId);
+    deleteUserByID(userId);
     console.log('DONE');
   }
 }

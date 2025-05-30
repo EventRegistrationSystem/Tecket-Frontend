@@ -1,5 +1,12 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { useUserStore } from "@/store/userStore";
+import { useRouter } from 'vue-router';
+import { logoutUser } from "@/api/authServices.js";
+
+const router = useRouter();
+const userStore = useUserStore();
+const currentUser = computed(() => userStore.currentUser);
 
 const isUserMenuOpen = ref(false);
 
@@ -7,82 +14,44 @@ const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value;
 };
 
+const logOut = async () => {
+  try {
+    await logoutUser();
+  } catch (error) {
+    console.error('Logout API call failed (AdminNavbar):', error);
+  } finally {
+    userStore.clearUserSession();
+    isUserMenuOpen.value = false;
+    router.push("/");
+  }
+};
+
 defineEmits(["toggle-sidebar"]);
 </script>
 
-<script>
-
-import { useUserStore } from "@/store/userStore";
-import router from "@/router";
-
-export default {
-  methods: {
-    logOut() {
-      const userStore = useUserStore();
-      userStore.clearUserSession();
-
-      // Action NEEDED for refreshToken
-      router.push("/");
-    },
-  },
-};
-</script>
-
 <template>
-  <div
-    class="bg-white shadow-sm d-flex align-items-center justify-content-between px-4"
-    style="height: 4rem"
-  >
+  <div class="bg-white shadow-sm d-flex align-items-center justify-content-between px-4" style="height: 4rem">
     <!-- Left section -->
     <div class="d-flex align-items-center">
-      <button
-        @click="$emit('toggle-sidebar')"
-        class="me-3 p-2 rounded-circle border-0 no-border-btn"
-      >
+      <button @click="$emit('toggle-sidebar')" class="me-3 p-2 rounded-circle border-0 no-border-btn">
         <i class="pi pi-bars text-secondary"></i>
       </button>
-
-      <div class="position-relative">
-        <input
-          type="text"
-          placeholder="Search..."
-          class="form-control"
-          style="padding-left: 2.5rem; width: 16rem"
-        />
-        <i
-          class="pi pi-search position-absolute text-muted"
-          style="left: 1rem; top: 0.75rem"
-        ></i>
-      </div>
     </div>
 
     <!-- Right section -->
     <div class="d-flex align-items-center gap-3">
       <!-- User profile -->
-      <div
-        class="d-flex align-items-center"
-        style="cursor: pointer"
-        @click="toggleUserMenu"
-      >
-        <img
-          src="https://i.pravatar.cc/36"
-          alt="User"
-          class="rounded-circle me-2"
-          style="width: 2rem; height: 2rem"
-        />
-        <span class="text-dark d-none d-md-inline">Admin User</span>
+      <div class="d-flex align-items-center" style="cursor: pointer" @click="toggleUserMenu">
+        <span class="text-dark d-none d-md-inline">
+          {{ currentUser?.firstName || 'User' }} {{ currentUser?.lastName || '' }}
+        </span>
         <i class="pi pi-angle-down ms-2 fs-6"></i>
 
-        <!-- User dropdown menu (shown when isUserMenuOpen is true) -->
-        <div
-          v-if="isUserMenuOpen"
-          class="position-absolute end-0 bg-dark shadow-lg rounded py-2"
-          style="top: 3rem; width: 12rem; z-index: 10"
-        >
-          <a
-            v-on:click="logOut()"
-            class="d-flex align-items-center px-4 py-2 text-white text-decoration-none user-menu-item"
-          >
+        <!-- Dropdown menu -->
+        <div v-if="isUserMenuOpen" class="position-absolute end-0 bg-white border shadow-lg rounded py-2 mt-1"
+          style="top: 3rem; width: 12rem; z-index: 1050;">
+          <a @click="logOut" class="d-flex align-items-center px-3 py-2 text-dark text-decoration-none user-menu-item"
+            style="cursor: pointer;">
             <i class="pi pi-power-off me-2"></i> Logout
           </a>
         </div>
@@ -101,7 +70,8 @@ export default {
 }
 
 .user-menu-item:hover {
-  background-color: #343a40;
-  transition: background-color 0.3s;
+  background-color: #f8f9fa;
+  /* Lighter hover for light dropdown */
+  transition: background-color 0.2s;
 }
 </style>

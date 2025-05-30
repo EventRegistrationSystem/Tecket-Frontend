@@ -1,16 +1,29 @@
 import httpClient from './httpClient';
+import { useUserStore } from '@/store/userStore';
 
-// The handleResponse helper is no longer needed as Axios and its interceptors handle this.
 
 /**
  * Fetch paginated list of events
  * @param {Object} params - Query parameters (page, limit, filters)
+ * @param {Object} options - Additional options like { isPublicView: boolean }
  * @returns {Promise<{ events: Array, pagination: Object }>} 
  */
-export const fetchEvents = async (params = {}) => {
+export const fetchEvents = async (params = {}, options = {}) => {
+  const userStore = useUserStore();
+  const currentUser = userStore.currentUser;
+  let requestParams = { ...params };
+  let axiosConfig = { params: requestParams };
+
+  if (options.isPublicView) {
+    axiosConfig.publicView = true; // Signal httpClient to not send Auth header
+
+  } else if (currentUser && currentUser.role === 'ORGANIZER') {
+    requestParams.myEvents = true; // Add myEvents flag for organizers' private views
+  }
+
   try {
-    const response = await httpClient.get('/events', { params });
-    return response.data.data; 
+    const response = await httpClient.get('/events', axiosConfig);
+    return response.data.data;
   } catch (error) {
     console.error('Error fetching events:', error.response?.data?.message || error.message);
     throw error.response?.data || error;
@@ -30,6 +43,23 @@ export const getEventReport = async (eventId) => {
 
   } catch (error) {
     console.error(`Error fetching event report for ID ${eventId}:`, error.response?.data?.message || error.message);
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Update the status of an existing event
+ * @param {number|string} eventId
+ * @param {string} status - The new status (e.g., 'PUBLISHED', 'DRAFT', 'CANCELLED')
+ * @returns {Promise<Object>} Updated event data
+ */
+export const updateEventStatus = async (eventId, status) => {
+  try {
+    const response = await httpClient.patch(`/events/${eventId}/status`, { status });
+    // Backend response: { success: true, data: { ...updatedEvent } }
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error updating status for event ID ${eventId}:`, error.response?.data?.message || error.message);
     throw error.response?.data || error;
   }
 };

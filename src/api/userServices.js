@@ -7,6 +7,7 @@ import httpClient from './httpClient';
  * The httpClient will automatically add the Authorization token.
  * Assuming the backend endpoint for the current user's profile is /users/profile (or similar like /auth/me)
  * @returns {Promise<Object>} User Profile object
+ * @throws {Error} If the API request fails.
  */
 export const fetchUserProfile = async () => {
   try {
@@ -26,7 +27,7 @@ export const fetchUserProfile = async () => {
  */
 export const fetchAllUsers = async () => { // Renamed for clarity
   try {
-    const response = await httpClient.get('/users'); // Assuming endpoint is /users for admin
+    const response = await httpClient.get('/user/users'); // Assuming endpoint is /users for admin
     // Assuming backend response is { success: true, data: { users: [], pagination: {} } } or just { success: true, data: [] }
     return response.data.data.users || response.data.data; 
   } catch (error) {
@@ -40,9 +41,9 @@ export const fetchAllUsers = async () => { // Renamed for clarity
  * @param {number|string} userId
  * @returns {Promise<Object>} Response data, typically a success message.
  */
-export const deleteUserById = async (userId) => {
+export const deleteUserByID = async (userId) => {
   try {
-    const response = await httpClient.delete(`/users/${userId}`); // Assuming endpoint is /users/:id for admin
+    const response = await httpClient.delete(`/user/${userId}`); // Assuming endpoint is /users/:id for admin
     return response.data; // Assuming backend returns { success: true, message: '...' }
   } catch (error) {
     console.error(`Error deleting user ID ${userId}:`, error.response?.data?.message || error.message);
@@ -57,7 +58,7 @@ export const deleteUserById = async (userId) => {
  */
 export const createUser = async (userData) => {
   try {
-    const response = await httpClient.post('/users', userData); // Assuming endpoint is /users for admin
+    const response = await httpClient.post('/user', userData); // Assuming endpoint is /users for admin
     // Assuming backend response is { success: true, data: { ...createdUser } }
     return response.data.data;
   } catch (error) {
@@ -73,7 +74,7 @@ export const createUser = async (userData) => {
  */
 export const fetchUserById = async (userId) => { // Renamed for clarity
   try {
-    const response = await httpClient.get(`/users/${userId}`); // Assuming endpoint is /users/:id for admin
+    const response = await httpClient.get(`/user/${userId}`); // Assuming endpoint is /users/:id for admin
     // Assuming backend response is { success: true, data: { ...userData } }
     return response.data.data;
   } catch (error) {
@@ -92,7 +93,7 @@ export const updateUser = async (userId, userData) => {
   try {
     // If this can also be a self-update, the endpoint might be /users/profile or /users/me
     // If it's strictly admin, /users/:userId is fine.
-    const response = await httpClient.put(`/users/${userId}`, userData); 
+    const response = await httpClient.put(`/user/${userId}`, userData); 
     // Assuming backend response is { success: true, data: { ...updatedUser } }
     return response.data.data;
   } catch (error) {

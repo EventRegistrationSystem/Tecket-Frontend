@@ -82,7 +82,7 @@ const eventId = route.params.id
 const eventDetail = ref(null) // Initialize as null
 const loading = ref(true)
 const error = ref(null)
-const defaultBanner = 'https://via.placeholder.com/800x400?text=Event+Banner'
+const defaultBanner = 'https://placehold.co/800x400?text=Event+Banner' // Changed to placehold.co
 
 // Generate a map URL based on location
 const mapUrl = computed(() => {
