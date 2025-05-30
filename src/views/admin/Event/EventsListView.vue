@@ -289,12 +289,12 @@ const deleteEvent = async (eventId) => {
     return
   }
   try {
-    const msg = await deleteEventApi(eventId)
+    const response = await deleteEventApi(eventId)
     eventsData.value = eventsData.value.filter(event => event.id !== eventId)
-    alert(msg)
+    alert(response.message || 'Event deleted successfully.')
   } catch (err) {
     console.error('Failed to delete event:', err)
-    alert('Failed to delete event. Please try again later.')
+    alert(err.message || 'Failed to delete event. Please try again later.')
   }
 }
 
@@ -334,6 +334,8 @@ const getStatusClass = (status) => {
       return 'bg-light text-danger'
     case 'PUBLISHED':
       return 'bg-light text-primary'
+    case 'DRAFT': // Added DRAFT
+      return 'bg-light text-secondary' // Example: using secondary color for DRAFT
     default:
       return 'bg-light text-dark'
   }

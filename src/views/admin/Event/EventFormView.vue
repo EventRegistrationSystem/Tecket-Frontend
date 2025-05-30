@@ -37,7 +37,6 @@ const eventForm = ref({
   zipCode: '',
   organizer: '',
   capacity: 100,
-  status: 'PUBLISHED',
   imageUrl: '',
   eventType: '',
   isFree: false,
@@ -128,8 +127,6 @@ onMounted(async () => {
           organizer: typeof eventData.organizer === 'object' && eventData.organizer !== null ? `${eventData.organizer.firstName} ${eventData.organizer.lastName}` : eventData.organizer || '',
 
           capacity: eventData.capacity || 100,
-          // status: eventData.status || 'Upcoming',
-          // imageUrl: eventData.imageUrl || 'https://placehold.co/600x400/eee/ccc?text=Event+Image',
           eventType: eventData.eventType || '',
           isFree: eventData.isFree || false,
         };
@@ -183,7 +180,7 @@ onMounted(async () => {
       console.error('Error fetching event data:', err);
       Object.assign(eventForm.value, {
         name: '', description: '', startDate: '', endDate: '', startTime: '', endTime: '',
-        location: '', address: '', city: '', state: '', zipCode: '', organizer: '', capacity: 100, status: 'Upcoming', eventType: '', isFree: false,
+        location: '', address: '', city: '', state: '', zipCode: '', organizer: '', capacity: 100, eventType: '', isFree: false,
       });
       ticketTypes.value = [];
       questions.value = [];
@@ -509,31 +506,19 @@ const removeOption = (question, optionIndex) => {
                   <input v-model="eventForm.endTime" type="time" class="form-control" />
                 </div>
               </div>
-              <div class="row g-3 mt-3">
-                <div class="col-12 col-md-6">
-                  <label class="form-label">Organizer</label>
-                  <input v-model="eventForm.organizer" type="text" placeholder="Organizing company or person"
-                    class="form-control" />
-                </div>
+              <div class="mb-3 mt-3">
+                <label class="form-label">Organizer</label>
+                <input v-model="eventForm.organizer" type="text" placeholder="Organizing company or person"
+                  class="form-control" />
               </div>
-              <div class="row g-3 mt-3">
-                <div class="col-12 col-md-6">
-                  <label class="form-label">
-                    Capacity <span class="text-danger">*</span>
-                  </label>
-                  <input v-model="eventForm.capacity" type="number" min="1" class="form-control"
-                    :class="{ 'is-invalid': errors.capacity }" />
-                  <div v-if="errors.capacity" class="invalid-feedback">
-                    {{ errors.capacity }}
-                  </div>
-                </div>
-                <div class="col-12 col-md-6">
-                  <label class="form-label">Status</label>
-                  <select v-model="eventForm.status" class="form-select">
-                    <option value="PUBLISHED">PUBLISHED</option>
-                    <option value="Draft">Draft</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
+              <div class="mb-3">
+                <label class="form-label">
+                  Capacity <span class="text-danger">*</span>
+                </label>
+                <input v-model="eventForm.capacity" type="number" min="1" class="form-control"
+                  :class="{ 'is-invalid': errors.capacity }" />
+                <div v-if="errors.capacity" class="invalid-feedback">
+                  {{ errors.capacity }}
                 </div>
               </div>
               <div class="mb-3">
@@ -736,15 +721,6 @@ const removeOption = (question, optionIndex) => {
                     </label>
                   </div>
                 </div>
-              </div>
-              <div class="alert alert-info">
-                <h4 class="h6 fw-semibold mb-1">Tips for Creating Questions</h4>
-                <ul class="list-disc list-inside small text-info">
-                  <li>Keep questions clear and concise</li>
-                  <li>Only make questions required if you absolutely need the information</li>
-                  <li>Use appropriate question types for the data you're collecting</li>
-                  <li>Consider the privacy implications of the data you collect</li>
-                </ul>
               </div>
             </div>
 
