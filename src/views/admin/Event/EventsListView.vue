@@ -24,8 +24,8 @@
             <select v-model="statusFilter" class="form-select" style="max-width: 16rem;">
               <option value="all">All Statuses</option>
               <option value="PUBLISHED">PUBLISHED</option>
-              <option value="Draft">Draft</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="DRAFT">DRAFT</option>
+              <option value="CANCELLED">CANCELLED</option>
             </select>
           </div>
           <!-- New event button -->
@@ -128,7 +128,7 @@
                 </td>
               </tr>
               <tr v-if="eventsData.length === 0 && !loading">
-                <td colspan="8" class="px-3 py-4 text-center text-muted"> <!-- Increased colspan -->
+                <td colspan="8" class="px-3 py-4 text-center text-muted">
                   <div class="d-flex flex-column align-items-center">
                     <i class="pi pi-calendar-times fs-1 mb-2"></i>
                     <p class="fw-medium">No events found</p>
@@ -164,7 +164,6 @@
             Showing <span class="fw-medium">{{ eventsData.length }}</span> of <span class="fw-medium">{{
               totalEvents }}</span> events
           </div>
-          <!-- The simple paging example buttons are removed as they are replaced by the nav above -->
         </div>
       </div>
     </div>
@@ -245,14 +244,22 @@ onMounted(() => {
 });
 
 // Watchers for changes that should trigger a re-fetch and reset page to 1
+let debounceTimer;
+const debounceFetch = (delay = 500) => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    currentPage.value = 1;
+    fetchAndApplyEvents();
+  }, delay);
+};
+
 watch(searchQuery, () => {
-  currentPage.value = 1;
-  fetchAndApplyEvents();
+  debounceFetch();
 });
 
 watch(statusFilter, () => {
   currentPage.value = 1;
-  fetchAndApplyEvents();
+  fetchAndApplyEvents(); // Status filter can apply immediately
 });
 
 watch([sortBy, sortOrder], () => {
@@ -324,18 +331,12 @@ const formatTime = (dateString) => {
 // Returns the CSS class name according to the event status
 const getStatusClass = (status) => {
   switch (status) {
-    case 'Active':
-      return 'bg-light text-success'
-    case 'Upcoming':
-      return 'bg-light text-primary'
-    case 'Completed':
-      return 'bg-light text-dark'
-    case 'Cancelled':
+    case 'CANCELLED':
       return 'bg-light text-danger'
     case 'PUBLISHED':
       return 'bg-light text-primary'
     case 'DRAFT': // Added DRAFT
-      return 'bg-light text-secondary' // Example: using secondary color for DRAFT
+      return 'bg-light text-secondary'
     default:
       return 'bg-light text-dark'
   }
