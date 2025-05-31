@@ -1,5 +1,11 @@
 <template>
   <div class="event-report-view p-4">
+    <!-- Back button -->
+    <button @click="router.back()" class="text-blue-600 hover:text-blue-800 mb-4 flex items-center">
+      <i class="pi pi-arrow-left mr-2"></i>
+      Back to Event Details
+    </button>
+
     <h1 class="text-2xl font-bold mb-6">Event Report</h1>
 
     <div v-if="loading" class="text-center">
@@ -72,26 +78,34 @@
           <table class="min-w-full bg-white">
             <thead class="bg-gray-100">
               <tr>
+                <th class="py-2 px-4 border-b text-left"></th> <!-- For expand/collapse icon -->
                 <th class="py-2 px-4 border-b text-left">Name</th>
                 <th class="py-2 px-4 border-b text-left">Email</th>
                 <th class="py-2 px-4 border-b text-left">Ticket Type</th>
-                <th class="py-2 px-4 border-b text-left">Questionnaire Responses</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(participant, index) in reportData.participants" :key="index" class="hover:bg-gray-50">
-                <td class="py-2 px-4 border-b">{{ participant.name }}</td>
-                <td class="py-2 px-4 border-b">{{ participant.email }}</td>
-                <td class="py-2 px-4 border-b">{{ participant.ticket }}</td>
-                <td class="py-2 px-4 border-b">
-                  <ul v-if="participant.questionnairreResponses.length" class="list-disc pl-5">
-                    <li v-for="(qr, qrIndex) in participant.questionnairreResponses" :key="qrIndex">
-                      <strong>{{ qr.question }}</strong> {{ formatQuestionnaireResponse(qr.response) }}
-                    </li>
-                  </ul>
-                  <span v-else>No responses.</span>
-                </td>
-              </tr>
+              <template v-for="(participant, index) in reportData.participants" :key="participant.email">
+                <tr class="hover:bg-gray-50 cursor-pointer" @click="toggleExpand(participant.email)">
+                  <td class="py-2 px-4 border-b text-center">
+                    <span :class="isExpanded(participant.email) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></span>
+                  </td>
+                  <td class="py-2 px-4 border-b">{{ participant.name }}</td>
+                  <td class="py-2 px-4 border-b">{{ participant.email }}</td>
+                  <td class="py-2 px-4 border-b">{{ participant.ticket }}</td>
+                </tr>
+                <tr v-if="isExpanded(participant.email)">
+                  <td colspan="4" class="p-4 bg-gray-50 border-b">
+                    <h4 class="font-semibold mb-2">Questionnaire Responses:</h4>
+                    <ul v-if="participant.questionnairreResponses.length" class="list-disc pl-5">
+                      <li v-for="(qr, qrIndex) in participant.questionnairreResponses" :key="qrIndex" class="mb-1">
+                        <strong class="text-gray-700">{{ qr.question }}:</strong> {{ formatQuestionnaireResponse(qr.response) }}
+                      </li>
+                    </ul>
+                    <p v-else class="text-gray-500">No responses for this participant.</p>
+                  </td>
+                </tr>
+              </template>
               <tr v-if="!reportData.participants.length">
                 <td colspan="4" class="py-2 px-4 border-b text-center text-gray-500">No participants found.</td>
               </tr>
@@ -122,13 +136,15 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router'; // Added useRouter
 import { getEventReport } from '../../../api/eventServices'; // Adjusted path
 
 const route = useRoute();
+const router = useRouter(); // Instantiate useRouter
 const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
+const expandedParticipants = ref([]); // Stores emails of expanded participants
 
 const eventId = computed(() => route.params.eventId);
 
@@ -174,6 +190,19 @@ const formatQuestionnaireResponse = (response) => {
     return response;
   }
   return response;
+};
+
+const toggleExpand = (participantEmail) => {
+  const index = expandedParticipants.value.indexOf(participantEmail);
+  if (index > -1) {
+    expandedParticipants.value.splice(index, 1); // Collapse
+  } else {
+    expandedParticipants.value.push(participantEmail); // Expand
+  }
+};
+
+const isExpanded = (participantEmail) => {
+  return expandedParticipants.value.includes(participantEmail);
 };
 
 onMounted(() => {
