@@ -11,10 +11,10 @@ export default {
   methods: {
     logOut() {
       const userStore = useUserStore();
-      userStore.clearAccessToken();
-      userStore.clearRole();
+      userStore.clearUserSession();
 
       // Action NEEDED for refreshToken
+      
       router.push('/')
     },
   },

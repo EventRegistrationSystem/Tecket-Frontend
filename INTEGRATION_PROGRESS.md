@@ -2,7 +2,7 @@
 
 This document tracks the progress of standardizing and refactoring the frontend application's communication with the backend API.
 
-## Date: 2025-05-18 (Updated)
+## Date: 2025-05-19 (Priorities Updated)
 
 ## I. Completed Tasks: Frontend API and Authentication Module Refactoring
 
@@ -96,37 +96,138 @@ Backend services were refactored for clarity, consistency, granular control, and
         *   Respective controllers (`EventController.ts`, `TicketController.ts`, `EventQuestionController.ts`) were updated to pass `userId` and `userRole` to services.
         *   Route-level `authorize('ORGANIZER', 'ADMIN')` middleware was verified/added for CUD operations.
 
-## III. Current Next Steps for Integration
+## III. Current Next Steps & Revised Priorities (as of 2025-05-19)
 
-With foundational backend and frontend API layers standardized and backend event/ticket/question management refactored:
+Following client feedback and completion of backend Admin User Management, priorities have been adjusted. Payment and Notification features are postponed.
 
-**A. Frontend (`Capstone-Frontend`):**
+**A. Frontend (`Capstone-Frontend` - High Priority):**
 
-1.  **Update `src/api/questionServices.js`:**
-    *   **Action:** Ensure functions correctly map to the dedicated backend endpoints for granular question management (e.g., `fetchEventQuestions`, `addQuestionToEvent`, `updateEventQuestionLink`, `deleteEventQuestionLink`).
-2.  **Implement/Refactor UI for Ticket and Question Management:**
-    *   **Ticket Management UI:** Develop/update UI (e.g., "Tickets" tab in event admin) using `src/api/ticketServices.js`.
-    *   **Question Management UI:** Develop/update UI (e.g., "Questions" tab in event admin) using the updated `src/api/questionServices.js` for granular management, or ensure it correctly sends full question arrays if relying on monolithic updates via `EventService.updateEvent`.
-3.  **Resolve Event Creation Issues (e.g., `isRequired` field error):**
-    *   **Action:** Debug the payload sent from `EventFormView.vue` during event creation to ensure it perfectly matches the backend `CreateEventDTO` and Joi `createEventSchema`.
-4.  **Review and Refactor Components Using Event/User Services:**
-    *   Audit components using `eventServices.js` and `userServices.js`; ensure correct data handling, loading states, and error display.
-5.  **Verify Token Refresh and Session Management:**
-    *   Thoroughly test login, logout, and token expiration scenarios.
-6.  **Implement Granular RBAC in UI:**
-    *   Extend role-based conditional rendering of UI elements.
-7.  **Global Error Handling/Notifications:**
-    *   Consider a global UI notification system for API errors.
+1.  **Registration Management UI (Admin/Organizer):**
+    *   **Action:** Design and implement views/components for Admins and Organizers to view, search, and manage registration details. This includes participant information, selected tickets, and questionnaire responses.
+    *   **API Integration:** Create/update `src/api/registrationServices.js` to support these new backend endpoints.
+2.  **Support New Question Types in UI:**
+    *   **Event Setup:** Update `EventFormView.vue` (or dedicated question management UI) to allow organizers to define new question types (e.g., multiple-choice, dropdown) and their options.
+    *   **Participant Questionnaire:** Enhance `QuestionnaireFormView.vue` to dynamically render these new question types and correctly capture responses.
+    *   **API Integration:** Ensure `src/api/questionServices.js` (and event creation/update payloads) can handle new question type data and options.
+3.  **Cleanup Static Data & Full API Integration:**
+    *   **Action:** Systematically replace remaining mock data in components with live API calls (e.g., for event lists, user lists for admin management, ticket displays).
+    *   Ensure all relevant frontend views are fetching and displaying data from the backend.
+4.  **Admin User Management UI Integration:**
+    *   **Action:** Implement or complete the frontend UI for Admin User Management, integrating with the completed backend CRUD APIs for users.
+5.  **Finalize and Test Core Flows:**
+    *   Thoroughly test the end-to-end event creation, event update (monolithic sync), registration, and token refresh flows.
+    *   Resolve any outstanding issues like the `isRequired` field error during event creation.
 
-**B. Backend (`Capstone-Backend`):**
+**B. Backend (`Capstone-Backend` - Supporting Frontend & Stability):**
 
-1.  **Re-enable and Complete Joi Validations:**
-    *   **Action:** Re-enable `validateRequest(createEventSchema)` in `eventRoutes.ts` (for `POST /api/events`).
-    *   **Action:** Re-enable `validateRequest(addEventQuestionLinkSchema)` in `eventQuestionRoutes.ts` (for `POST /api/events/:eventId/questions`).
-    *   **Action:** Create and apply Joi schemas for `updateEvent` (`PUT /api/events/:id`) and `updateEventStatus` (`PATCH /api/events/:id/status`) payloads in `eventRoutes.ts`.
-2.  **Review `EventService.createEvent` Internal Calls (Optional Refinement):**
-    *   Consider if `EventService.createEvent` should internally call `TicketService.createTicket` and `EventQuestionService.addQuestionToEvent` (passing `tx`) for creating initial tickets/questions, for maximum consistency with the `updateEvent` pattern. (Currently uses direct `tx.ticket.create` etc.).
-3.  **Global Question Bank Management (Optional Future Enhancement):**
-    *   Implement dedicated API/UI for managing the global `Question` table if needed.
+1.  **Registration Management APIs:**
+    *   **Action:** Design and implement robust API endpoints for admins/organizers to manage registrations as per frontend requirements.
+2.  **Support New Question Types:**
+    *   **Action:** Update Prisma schema (`QuestionType` enum, `options` field in `Question` model).
+    *   **Action:** Modify `EventQuestionService` and DTOs to handle creation, storage, and retrieval of new question types and their options.
+3.  **Re-enable and Complete Joi Validations:**
+    *   **Action:** Re-enable `validateRequest(createEventSchema)` (events) and `validateRequest(addEventQuestionLinkSchema)` (event questions).
+    *   **Action:** Create and apply Joi schemas for `updateEvent` and `updateEventStatus` payloads.
+4.  **Finalize Refresh Token Flow:**
+    *   Ensure backend correctly sends 401s for expired tokens to enable frontend refresh (recent fixes should address this).
+5.  **Review `EventService.createEvent` Internal Calls (Optional Refinement):**
+    *   Consider refactoring to call `TicketService.createTicket` and `EventQuestionService.addQuestionToEvent` (passing `tx`) for consistency.
 
-This summary should provide a good overview of our progress and a roadmap for continuing the integration and refactoring efforts.
+**C. Postponed / Lower Priority:**
+
+*   Advanced Payment Features (Refunds, etc.) and full PaymentService unit testing.
+*   Core Email Notification System.
+*   Global Question Bank Management (Backend).
+*   Global Error Handling/Notifications (Frontend - beyond basic).
+*   Granular RBAC in UI (Frontend - beyond basic route guards).
+
+This revised plan reflects the new focus on core administrative and user experience features.
+
+## IV. Event Registration Flow and Router Refactoring (Date: 2025-05-19)
+
+This phase focused on implementing the core event registration flow (excluding payment processing for now) and significantly refactoring the Vue Router setup for better organization and performance.
+
+**A. Frontend (`Capstone-Frontend`): Event Registration Flow Implementation**
+
+1.  **New API Service for Registration:**
+    *   **File Created:** `src/api/registrationServices.js`
+    *   **Details:** Includes `createRegistration(registrationData)` function to call the backend `POST /api/registrations` endpoint using the central `httpClient`.
+2.  **New Pinia Store for Registration State:**
+    *   **File Created:** `src/store/registrationStore.js`
+    *   **Details:** Manages the entire state of the multi-step registration process, including:
+        *   `eventId` and full `eventDetails` (name, tickets, dynamic event-specific questions).
+        *   `selectedTickets` (array of `{ ticketId, name, price, quantity, ... }`).
+        *   `participants` (array of participant objects: `{ email, firstName, lastName, ..., responses: [] }`). Each participant's `responses` array is structured to hold `eventQuestionId`, `questionId`, `questionText`, `isRequired`, `questionType`, `validationRules`, and `responseText` for dynamic rendering and submission.
+        *   `registrationId` and `paymentToken` (from backend upon submission).
+        *   `currentStep` in the registration flow.
+    *   Includes actions to set event data, update ticket quantities, initialize/update participant info and responses, reset state, and prepare the payload for API submission.
+    *   `initializeParticipants()` action enhanced to correctly structure participant response arrays based on `eventDetails.eventQuestions` and handle free event scenarios.
+3.  **Refactored Event Details View for Registration Initiation:**
+    *   **File Updated:** `src/views/event/EventDetailsView.vue`
+    *   **Details:**
+        *   Fetches full event details (including `tickets` and `eventQuestions`) using `eventServices.js`.
+        *   On "Register now" click, it calls `registrationStore.setEvent()` to populate the store with the current event's data and navigates to the first step of registration.
+        *   Console logs added for debugging `eventQuestions` data.
+4.  **Refactored Multi-Step Registration Views:**
+    *   **`src/views/registration/TicketSelectionFormView.vue`:**
+        *   Dynamically displays available tickets from `registrationStore.eventDetails.tickets`.
+        *   Updates `registrationStore` with selected ticket quantities.
+        *   Navigates to the personal info step.
+    *   **`src/views/registration/PersonalInfoFormView.vue`:**
+        *   Dynamically creates forms for each participant based on `registrationStore.totalSelectedTickets` (or 1 for free events).
+        *   Collects and stores participant details (email, name, optional fields) in `registrationStore.participants`.
+        *   A "Maximum recursive updates" warning was resolved by removing a redundant `watch`er.
+    *   **`src/views/registration/QuestionnaireFormView.vue`:**
+        *   Dynamically renders questions for each participant based on `registrationStore.eventDetails.eventQuestions`.
+        *   Supports 'TEXT' and 'MULTIPLE_CHOICE' (with options) question types.
+        *   Includes a fallback to a text input for unrecognized question types or improperly configured MULTIPLE_CHOICE questions.
+        *   Binds answers to the `responses` array within each participant object in the `registrationStore`.
+    *   **`src/views/registration/ReviewFormView.vue`:**
+        *   Displays a comprehensive summary of the event, selected tickets, total cost (calculated), and all participant details including their questionnaire responses, all sourced from `registrationStore`.
+        *   Handles submission by calling `registrationServices.createRegistration()` with a payload generated by `registrationStore.getRegistrationPayload()`.
+        *   Navigates to `RegistrationSuccessView` (for free events) or `RegistrationPendingPaymentView` (for paid events, as payment is deferred).
+        *   Displays API errors if submission fails.
+5.  **New Registration Outcome Views:**
+    *   **File Created:** `src/views/registration/RegistrationSuccessView.vue` (displays success message and registration ID).
+    *   **File Created:** `src/views/registration/RegistrationPendingPaymentView.vue` (displays pending status, registration ID, and payment token if applicable).
+6.  **User Experience Enhancement - Cancel Registration:**
+    *   **File Updated:** `src/components/StepIndicator.vue`
+    *   **Details:** Added a "Cancel Registration" button. Clicking it prompts for confirmation, then calls `registrationStore.resetRegistrationState()` and navigates the user back to the event details page (if `eventId` is known) or the main event list.
+
+**B. Frontend (`Capstone-Frontend`): Router Refactoring**
+
+1.  **Standardized Dynamic Imports:**
+    *   **File Updated:** `src/router/index.js` (initially, then this structure was moved to `index-1.js`)
+    *   **Details:** All route components were converted to use dynamic imports (`component: () => import('...')`) for lazy loading, improving initial application load time.
+2.  **Modularized Router Configuration:**
+    *   **New Directory Created:** `src/router/modules/`
+    *   **New Route Module Files Created:**
+        *   `src/router/modules/publicRoutes.js`
+        *   `src/router/modules/authRoutes.js`
+        *   `src/router/modules/registrationRoutes.js`
+        *   `src/router/modules/adminRoutes.js` (admin view import paths updated to use `@/views/admin/...`)
+        *   `src/router/modules/userProfileRoutes.js`
+    *   **New Main Router File:**
+        *   **File Created:** `src/router/index-1.js`
+        *   **Details:** This file now imports all the route modules, concatenates their route arrays, and sets up the `VueRouter` instance, including the existing navigation guard. The original `src/router/index.js` was preserved as a backup.
+        *   To activate this new setup, `src/main.js` needs to be updated to import the router from `'./router/index-1'`.
+
+**C. Frontend (`Capstone-Frontend`): Admin Dashboard Adjustments**
+
+1.  **Removed Top-Level "Tickets" Management:**
+    *   **File Updated:** `src/components/admin/AdminSidebar.vue` - Removed "Tickets" link.
+    *   **File Updated:** `src/router/index.js` (and subsequently `src/router/modules/adminRoutes.js`) - Removed routes for `/admin/tickets`, `/admin/tickets/users/:id`, and `/admin/tickets/participants/:id`.
+    *   Associated view files (`TicketsList.vue`, `TicketUserDetail.vue`, `TicketsParticipantsDetail.vue`) were manually deleted. Ticket management remains for event-specific contexts.
+
+**D. Current Next Steps for Frontend (Post-Registration Flow V1 & Router Refactor):**
+
+1.  **Activate Modular Router:** Update `src/main.js` to use `src/router/index-1.js`.
+2.  **Thorough Testing of Registration Flow:** Test with various events (paid, free, with/without questions of different types) to ensure data integrity and correct navigation.
+3.  **Payment Integration:** Implement Stripe Elements in `CheckoutView.vue` and integrate with backend payment intent creation and webhook confirmation polling/handling.
+4.  **Address Remaining Items from Section III.A:**
+    *   Update `src/api/questionServices.js` for granular question management (if still needed after dynamic event questions in registration).
+    *   Implement/Refactor UI for admin-side Ticket and Question Management (within an event context).
+    *   Resolve any remaining Event Creation issues.
+    *   Review and Refactor Components Using Event/User Services.
+    *   Implement Granular RBAC in UI.
+    *   Consider Global Error Handling/Notifications.

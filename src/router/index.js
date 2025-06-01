@@ -99,6 +99,12 @@ const routes = [
     component: () => import("../views/admin/Event/EventFormView.vue"),
     meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
   },
+  {
+    path: "/admin/events/:eventId/report",
+    name: "AdminEventReport",
+    component: () => import("../views/admin/Event/EventReportView.vue"),
+    meta: { requiresAuth: true, roles: ['ADMIN', 'ORGANIZER'] }
+  },
 
   // -- Registration Management Routes (Admin) --
   {
