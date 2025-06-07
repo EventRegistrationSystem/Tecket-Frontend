@@ -78,7 +78,7 @@ export const useRegistrationStore = defineStore('registration', {
       } else if (targetParticipantCount < currentParticipantCount) {
         currentParticipantsArray.splice(targetParticipantCount);
       }
-      
+
       // Now, ensure each participant has the correct response structure based on eventQuestions
       if (this.eventDetails && this.eventDetails.eventQuestions && this.eventDetails.eventQuestions.length > 0) {
         console.log('[Store initializeParticipants] Processing eventQuestions:', JSON.parse(JSON.stringify(this.eventDetails.eventQuestions)));
@@ -142,6 +142,7 @@ export const useRegistrationStore = defineStore('registration', {
         console.error("Event ID is missing in registration store.")
         return null;
       }
+
       // Filter out tickets with quantity 0
       const ticketsForPayload = this.selectedTickets
         .filter(ticket => ticket.quantity > 0)
@@ -150,41 +151,59 @@ export const useRegistrationStore = defineStore('registration', {
           quantity: ticket.quantity
         }));
 
-      // For free events, the backend expects an empty tickets array
-      if (this.eventDetails && this.eventDetails.isFree && ticketsForPayload.length === 0) {
-        // If it's a free event and no tickets were "selected" (because they are free and implicit)
-        // we might need to adjust this based on backend expectations for free event registrations.
-        // The backend guide says: "tickets: Array<{ ticketId: number, quantity: number }> (Empty array [] for free events)"
-        // This implies that even for free events, if there's a concept of "1 registration",
-        // the participant data is key, and tickets array should be empty.
-        // If the free event still has "ticket types" that are free, and user selects one,
-        // then ticketsForPayload would not be empty. This needs clarification or testing.
-        // For now, if it's free and no tickets were explicitly selected (e.g. quantity > 0), send empty.
-      }
-
+      // Assign ticketId to each participant based on ticket selection
+      const participantsWithTickets = this.assignTicketsToParticipants();
 
       return {
         eventId: this.eventId,
         tickets: (this.eventDetails && this.eventDetails.isFree) ? [] : ticketsForPayload,
-        participants: this.participants.map(p => ({
+        participants: participantsWithTickets.map(p => ({
           email: p.email,
           firstName: p.firstName,
           lastName: p.lastName,
-          phoneNumber: p.phoneNumber || undefined, // Send undefined if empty to avoid empty strings if backend expects null/omitted
+          phoneNumber: p.phoneNumber || undefined,
           dateOfBirth: p.dateOfBirth || undefined,
           address: p.address || undefined,
           city: p.city || undefined,
           state: p.state || undefined,
           zipCode: p.zipCode || undefined,
           country: p.country || undefined,
+          ticketId: p.ticketId, // Include the assigned ticketId
           responses: p.responses
-            .filter(r => r.responseText !== '' || r.isRequired) // Send responses that are answered or required
+            .filter(r => r.responseText !== '' || r.isRequired)
             .map(r => ({
               eventQuestionId: r.eventQuestionId,
               responseText: r.responseText
             }))
         }))
       }
+    },
+
+    // Helper method to assign tickets to participants
+    assignTicketsToParticipants() {
+      const participantsWithTickets = [...this.participants];
+      let participantIndex = 0;
+
+      // For free events, assign the first available ticket (or null if no tickets)
+      if (this.eventDetails && this.eventDetails.isFree) {
+        const firstTicket = this.selectedTickets.length > 0 ? this.selectedTickets[0] : null;
+        participantsWithTickets.forEach(participant => {
+          participant.ticketId = firstTicket ? firstTicket.ticketId : null;
+        });
+        return participantsWithTickets;
+      }
+
+      // For paid events, assign tickets based on quantities
+      this.selectedTickets.forEach(ticket => {
+        for (let i = 0; i < ticket.quantity; i++) {
+          if (participantIndex < participantsWithTickets.length) {
+            participantsWithTickets[participantIndex].ticketId = ticket.ticketId;
+            participantIndex++;
+          }
+        }
+      });
+
+      return participantsWithTickets;
     }
   }
 })
