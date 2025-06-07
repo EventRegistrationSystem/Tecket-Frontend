@@ -1,12 +1,12 @@
 // Form validation utilities
 export const validateEventForm = (eventForm, ticketTypes, questions) => {
   const errors = {};
-  
+
   // Basic form validation
   if (!eventForm.name) errors.name = "Event name is required";
   if (!eventForm.startDate) errors.startDate = "Event start date is required";
   if (!eventForm.endDate) errors.endDate = "Event end date is required";
-  
+
   if (
     eventForm.startDate &&
     eventForm.endDate &&
@@ -14,7 +14,7 @@ export const validateEventForm = (eventForm, ticketTypes, questions) => {
   ) {
     errors.endDate = "End date must be after start date";
   }
-  
+
   if (!eventForm.location) errors.location = "Location is required";
   if (!eventForm.capacity || eventForm.capacity <= 0)
     errors.capacity = "Valid capacity is required";
@@ -24,7 +24,7 @@ export const validateEventForm = (eventForm, ticketTypes, questions) => {
   if (eventForm.isFree === false && ticketTypes.length === 0) {
     errors.tickets = "At least one ticket type is required for paid events.";
   }
-  
+
   if (eventForm.isFree === false) {
     ticketTypes.forEach((ticket, index) => {
       if (!ticket.name)
@@ -63,23 +63,35 @@ export const validateEventForm = (eventForm, ticketTypes, questions) => {
     questions.forEach((q, index) => {
       if (!q.text.trim())
         errors[`question_${index}_text`] = `Question ${index + 1} text is required.`;
-      
+
       if (
         (q.type === "select" || q.type === "checkbox") &&
         (!q.options ||
           q.options.length === 0 ||
           q.options.some((opt) => !opt.trim()))
       ) {
-        errors[`question_${index}_options`] = `Question ${index + 1} (${
-          q.type === "select" ? "Dropdown" : "Checkboxes"
-        }) must have at least one non-empty option.`;
+        errors[`question_${index}_options`] = `Question ${index + 1} (${q.type === "select" ? "Dropdown" : "Checkboxes"
+          }) must have at least one non-empty option.`;
       }
     });
   }
 
+  let firstErrorTab = null;
+  if (Object.keys(errors).length > 0) {
+    const firstErrorKey = Object.keys(errors)[0];
+    if (firstErrorKey.startsWith('ticket_')) {
+      firstErrorTab = 'tickets';
+    } else if (firstErrorKey.startsWith('question_')) {
+      firstErrorTab = 'questionnaire';
+    } else {
+      firstErrorTab = 'basic';
+    }
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
-    errors
+    errors,
+    firstErrorTab,
   };
 };
 

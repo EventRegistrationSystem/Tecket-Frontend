@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminLayout from "@/views/admin/AdminLayout.vue";
 
@@ -26,11 +26,11 @@ import {
 import EventBasicInfo from "./components/EventBasicInfo.vue";
 import EventTickets from "./components/EventTickets.vue";
 import EventQuestionnaire from "./components/EventQuestionnaire.vue";
-import { 
-  parseDate, 
-  parseTime, 
-  combineDateAndTime, 
-  getDefaultFormState 
+import {
+  parseDate,
+  parseTime,
+  combineDateAndTime,
+  getDefaultFormState
 } from "./utils/eventFormUtils.js";
 import { validateEventForm, scrollToFirstError } from "./utils/eventFormValidation.js";
 
@@ -108,7 +108,7 @@ onMounted(async () => {
           zipCode: eventData.zipCode || "",
           organizer:
             typeof eventData.organizer === "object" &&
-            eventData.organizer !== null
+              eventData.organizer !== null
               ? `${eventData.organizer.firstName} ${eventData.organizer.lastName}`
               : eventData.organizer || "",
 
@@ -168,7 +168,7 @@ onMounted(async () => {
             order: q.displayOrder !== undefined ? q.displayOrder : 0,
             category: q.question.category || "",
             backendQuestionId: q.question.id, // This is Question.id
-            backendEventQuestionId: q.id, 
+            backendEventQuestionId: q.id,
           };
         });
         originalQuestions.value = JSON.parse(JSON.stringify(questions.value));
@@ -204,12 +204,15 @@ onMounted(async () => {
 });
 
 const handleValidation = () => {
-  const { isValid, errors: validationErrors } = validateEventForm(
+  const { isValid, errors: validationErrors, firstErrorTab } = validateEventForm(
     eventForm.value,
     ticketTypes.value,
     questions.value
   );
   errors.value = validationErrors;
+  if (!isValid && firstErrorTab) {
+    activeTab.value = firstErrorTab;
+  }
   return isValid;
 };
 
@@ -257,6 +260,9 @@ const getQuestionPayload = (q, index) => {
 
 const saveEvent = async () => {
   if (!handleValidation()) {
+    // The validation function now handles switching tabs.
+    // We just need to scroll to the error.
+    await nextTick();
     scrollToFirstError(errors.value);
     return;
   }
@@ -362,16 +368,8 @@ const cancelForm = () => {
   <AdminLayout>
     <div class="p-4">
       <!-- Loading status -->
-      <div
-        v-if="loading"
-        class="d-flex justify-content-center align-items-center"
-        style="height: 16rem"
-      >
-        <div
-          class="spinner-border text-primary"
-          style="width: 3rem; height: 3rem"
-          role="status"
-        >
+      <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height: 16rem">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
@@ -394,32 +392,21 @@ const cancelForm = () => {
         <!-- Forms Tab Navigation -->
         <div class="bg-white rounded shadow-sm mb-4">
           <div class="d-flex border-bottom overflow-auto">
-            <button
-              @click="activeTab = 'basic'"
-              type="button"
+            <button @click="activeTab = 'basic'" type="button"
               class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn"
-              :class="activeTab === 'basic' ? 'text-primary' : 'text-muted'"
-            >
+              :class="activeTab === 'basic' ? 'text-primary' : 'text-muted'">
               <i class="pi pi-info-circle me-1"></i>
               Basic Information
             </button>
-            <button
-              @click="activeTab = 'tickets'"
-              type="button"
+            <button @click="activeTab = 'tickets'" type="button"
               class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn"
-              :class="activeTab === 'tickets' ? 'text-primary' : 'text-muted'"
-            >
+              :class="activeTab === 'tickets' ? 'text-primary' : 'text-muted'">
               <i class="pi pi-ticket me-1"></i>
               Tickets
             </button>
-            <button
-              @click="activeTab = 'questionnaire'"
-              type="button"
-              class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn"
-              :class="
-                activeTab === 'questionnaire' ? 'text-primary' : 'text-muted'
-              "
-            >
+            <button @click="activeTab = 'questionnaire'" type="button"
+              class="px-3 py-2 fs-6 fw-semibold text-nowrap bg-light border-0 no-border-btn" :class="activeTab === 'questionnaire' ? 'text-primary' : 'text-muted'
+                ">
               <i class="pi pi-list-alt me-1"></i>
               Questionnaire
             </button>
@@ -430,55 +417,30 @@ const cancelForm = () => {
         <div class="bg-white rounded shadow-sm p-4">
           <form @submit.prevent="saveEvent">
             <!-- Basic Info Tab -->
-            <EventBasicInfo
-              v-if="activeTab === 'basic'"
-              v-model:eventForm="eventForm"
-              :errors="errors"
-              @image-uploaded="(url) => eventForm.imageUrl = url"
-            />
+            <EventBasicInfo v-if="activeTab === 'basic'" v-model:eventForm="eventForm" :errors="errors"
+              @image-uploaded="(url) => eventForm.imageUrl = url" />
 
             <!-- Tickets Tab -->
-            <EventTickets
-              v-if="activeTab === 'tickets'"
-              v-model:ticketTypes="ticketTypes"
-              :eventForm="eventForm"
-              :errors="errors"
-              :isEditMode="isEditMode"
-            />
+            <EventTickets v-if="activeTab === 'tickets'" v-model:ticketTypes="ticketTypes" :eventForm="eventForm"
+              :errors="errors" :isEditMode="isEditMode" />
 
             <!-- Questionnaire Tab -->
-            <EventQuestionnaire
-              v-if="activeTab === 'questionnaire'"
-              v-model:questions="questions"
-              :errors="errors"
-            />
+            <EventQuestionnaire v-if="activeTab === 'questionnaire'" v-model:questions="questions" :errors="errors" />
 
             <!-- Form Action Buttons -->
             <div v-if="errors.submit" class="alert alert-danger">
               {{ errors.submit }}
             </div>
             <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3">
-              <button
-                @click="cancelForm"
-                type="button"
-                class="btn btn-outline-secondary"
-              >
+              <button @click="cancelForm" type="button" class="btn btn-outline-secondary">
                 Cancel
               </button>
-              <button
-                type="submit"
-                class="btn btn-primary d-flex align-items-center"
-                :disabled="saving"
-              >
+              <button type="submit" class="btn btn-primary d-flex align-items-center" :disabled="saving">
                 <span v-if="!saving">{{
                   isEditMode ? "Update Event" : "Create Event"
-                }}</span>
+                  }}</span>
                 <span v-else class="d-flex align-items-center">
-                  <span
-                    class="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   Saving...
                 </span>
               </button>
