@@ -156,7 +156,8 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { getRegistrationDetails, updateRegistrationStatus, sendInvoice } from '@/api/registrationServices.js'
+import { getRegistrationDetails, updateRegistrationStatus } from '@/api/registrationServices.js'
+import { sendInvoice } from '@/api/emailServices.js'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
 
 const route = useRoute()
