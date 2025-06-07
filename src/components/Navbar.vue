@@ -62,7 +62,7 @@
           style="top: 3rem; width: 12rem; z-index: 10">
           <a style="cursor: pointer;" @click="goToProfile"
             class="d-flex align-items-center px-4 py-2 text-white text-decoration-none">
-            <i class="pi pi-user me-2"></i> Profile
+            <i class="pi pi-user me-2"></i> Dashboard
           </a>
           <div class="border-top border-secondary my-1"></div>
           <a style="cursor: pointer;" @click="logOut"

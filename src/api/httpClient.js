@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useUserStore } from '@/store/userStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventregistrationsystem-backend.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const httpClient = axios.create({
   baseURL: API_BASE_URL,

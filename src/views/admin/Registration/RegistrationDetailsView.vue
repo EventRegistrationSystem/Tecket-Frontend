@@ -4,7 +4,8 @@
       <!-- Page header -->
       <div class="mb-4">
         <h1 class="fs-2 fw-bold text-dark">Registration Details #{{ registrationId }}</h1>
-        <p v-if="registrationDetails" class="text-muted mt-1">Details for registration by {{ registrationDetails.participant?.firstName }} {{ registrationDetails.participant?.lastName }}</p>
+        <p v-if="registrationDetails" class="text-muted mt-1">Details for registration by {{
+          registrationDetails.participant?.firstName }} {{ registrationDetails.participant?.lastName }}</p>
       </div>
 
       <!-- Loading and error messages -->
@@ -16,7 +17,8 @@
         <h2 class="fs-4 fw-bold mb-3">Overview</h2>
         <div class="row mb-4">
           <div class="col-md-6">
-            <p><strong>Status:</strong> <span :class="getStatusClass(registrationDetails.status)" class="px-2 py-1 rounded-pill small fw-medium">{{ registrationDetails.status }}</span></p>
+            <p><strong>Status:</strong> <span :class="getStatusClass(registrationDetails.status)"
+                class="px-2 py-1 rounded-pill small fw-medium">{{ registrationDetails.status }}</span></p>
             <p><strong>Registration Date:</strong> {{ formatDate(registrationDetails.created_at) }}</p>
             <p><strong>Total Amount Paid:</strong> {{ formatCurrency(registrationDetails.purchase?.totalPrice) }}</p>
           </div>
@@ -32,17 +34,20 @@
         <h2 class="fs-4 fw-bold mb-3">Primary Registrant</h2>
         <div v-if="registrationDetails.participant" class="row mb-4">
           <div class="col-md-6">
-            <p><strong>Name:</strong> {{ registrationDetails.participant.firstName }} {{ registrationDetails.participant.lastName }}</p>
+            <p><strong>Name:</strong> {{ registrationDetails.participant.firstName }} {{
+              registrationDetails.participant.lastName }}</p>
             <p><strong>Email:</strong> {{ registrationDetails.participant.email }}</p>
-            <p v-if="registrationDetails.participant.phoneNumber"><strong>Phone:</strong> {{ registrationDetails.participant.phoneNumber }}</p>
+            <p v-if="registrationDetails.participant.phoneNumber"><strong>Phone:</strong> {{
+              registrationDetails.participant.phoneNumber }}</p>
           </div>
           <div class="col-md-6" v-if="registrationDetails.participant.address">
-             <p><strong>Address:</strong> {{ registrationDetails.participant.address }}</p>
-             <p>{{ registrationDetails.participant.city }}, {{ registrationDetails.participant.state }} {{ registrationDetails.participant.zipCode }}</p>
-             <p>{{ registrationDetails.participant.country }}</p>
+            <p><strong>Address:</strong> {{ registrationDetails.participant.address }}</p>
+            <p>{{ registrationDetails.participant.city }}, {{ registrationDetails.participant.state }} {{
+              registrationDetails.participant.zipCode }}</p>
+            <p>{{ registrationDetails.participant.country }}</p>
           </div>
         </div>
-         <div v-else class="text-muted">Primary participant details not available.</div>
+        <div v-else class="text-muted">Primary participant details not available.</div>
 
 
         <hr class="my-4">
@@ -61,10 +66,12 @@
               </div>
               <div v-else class="text-muted">Participant details not available for this attendee.</div>
 
-              <h3 v-if="attendee.responses && attendee.responses.length > 0" class="fs-5 mt-3 mb-2">Questionnaire Responses:</h3>
+              <h3 v-if="attendee.responses && attendee.responses.length > 0" class="fs-5 mt-3 mb-2">Questionnaire
+                Responses:</h3>
               <div v-if="attendee.responses && attendee.responses.length > 0">
                 <div v-for="response in attendee.responses" :key="response.id" class="mb-2">
-                  <p><strong>{{ response.eventQuestion?.question?.questionText || 'Question' }}:</strong> {{ response.responseText }}</p>
+                  <p><strong>{{ response.eventQuestion?.question?.questionText || 'Question' }}:</strong> {{
+                    response.responseText }}</p>
                 </div>
               </div>
               <div v-else class="text-muted">No questionnaire responses for this attendee.</div>
@@ -76,25 +83,27 @@
         <hr class="my-4">
 
         <h2 class="fs-4 fw-bold mb-3">Tickets Purchased</h2>
-         <div v-if="registrationDetails.purchase?.items && registrationDetails.purchase.items.length > 0">
-            <ul class="list-group list-group-flush">
-                <li v-for="item in registrationDetails.purchase.items" :key="item.id" class="list-group-item d-flex justify-content-between align-items-center">
-                    {{ item.quantity }} x {{ item.ticket?.name || 'Ticket' }}
-                    <span class="badge bg-primary rounded-pill">{{ formatCurrency(item.quantity * parseFloat(item.unitPrice)) }}</span>
-                </li>
-            </ul>
-         </div>
-         <div v-else class="text-muted">No tickets purchased for this registration.</div>
+        <div v-if="registrationDetails.purchase?.items && registrationDetails.purchase.items.length > 0">
+          <ul class="list-group list-group-flush">
+            <li v-for="item in registrationDetails.purchase.items" :key="item.id"
+              class="list-group-item d-flex justify-content-between align-items-center">
+              {{ item.quantity }} x {{ item.ticket?.name || 'Ticket' }}
+              <span class="badge bg-primary rounded-pill">{{ formatCurrency(item.quantity * parseFloat(item.unitPrice))
+              }}</span>
+            </li>
+          </ul>
+        </div>
+        <div v-else class="text-muted">No tickets purchased for this registration.</div>
 
         <!-- Add Payment Details section if needed -->
-         <div v-if="registrationDetails.purchase?.payment">
-             <hr class="my-4">
-             <h2 class="fs-4 fw-bold mb-3">Payment Details</h2>
-             <p><strong>Status:</strong> {{ registrationDetails.purchase.payment.status }}</p>
-             <p><strong>Amount:</strong> {{ formatCurrency(registrationDetails.purchase.payment.amount) }}</p>
-             <p><strong>Method:</strong> {{ registrationDetails.purchase.payment.method || 'N/A' }}</p>
-             <!-- Add more payment details as available -->
-         </div>
+        <div v-if="registrationDetails.purchase?.payment">
+          <hr class="my-4">
+          <h2 class="fs-4 fw-bold mb-3">Payment Details</h2>
+          <p><strong>Status:</strong> {{ registrationDetails.purchase.payment.status }}</p>
+          <p><strong>Amount:</strong> {{ formatCurrency(registrationDetails.purchase.payment.amount) }}</p>
+          <p><strong>Method:</strong> {{ registrationDetails.purchase.payment.method || 'N/A' }}</p>
+          <!-- Add more payment details as available -->
+        </div>
 
 
         <!-- Action Buttons (e.g., Update Status, Edit Details, Export) -->
@@ -113,18 +122,26 @@
               </select>
             </div>
             <div class="col-md-auto mb-3">
-              <button
-                class="btn btn-primary"
-                @click="handleUpdateStatus"
-                :disabled="isUpdatingStatus || !selectedStatus || (registrationDetails && selectedStatus === registrationDetails.status)"
-              >
-                <span v-if="isUpdatingStatus" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <button class="btn btn-primary" @click="handleUpdateStatus"
+                :disabled="isUpdatingStatus || !selectedStatus || (registrationDetails && selectedStatus === registrationDetails.status)">
+                <span v-if="isUpdatingStatus" class="spinner-border spinner-border-sm" role="status"
+                  aria-hidden="true"></span>
                 <span v-if="isUpdatingStatus"> Updating...</span>
                 <span v-else>Update Status</span>
               </button>
             </div>
           </div>
           <!-- Other actions like Edit Details, Export can be added here -->
+          <hr class="my-4">
+          <h3 class="fs-5 fw-bold mb-3">Send Invoice</h3>
+          <div v-if="sendInvoiceSuccessMessage" class="alert alert-success">{{ sendInvoiceSuccessMessage }}</div>
+          <div v-if="sendInvoiceError" class="alert alert-danger">{{ sendInvoiceError }}</div>
+          <button class="btn btn-info" @click="handleSendInvoice" :disabled="isSendingInvoice">
+            <span v-if="isSendingInvoice" class="spinner-border spinner-border-sm" role="status"
+              aria-hidden="true"></span>
+            <span v-if="isSendingInvoice"> Sending...</span>
+            <span v-else>Send Invoice Email</span>
+          </button>
         </div>
       </div>
 
@@ -140,6 +157,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { getRegistrationDetails, updateRegistrationStatus } from '@/api/registrationServices.js'
+import { sendInvoice } from '@/api/emailServices.js'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
 
 const route = useRoute()
@@ -154,6 +172,11 @@ const selectedStatus = ref('')
 const isUpdatingStatus = ref(false)
 const updateStatusError = ref(null)
 const updateStatusSuccessMessage = ref(null)
+
+// State for sending invoice
+const isSendingInvoice = ref(false);
+const sendInvoiceError = ref(null);
+const sendInvoiceSuccessMessage = ref(null);
 
 const availableStatuses = ['CONFIRMED', 'PENDING', 'CANCELLED'] // Add more if needed based on backend
 
@@ -215,6 +238,35 @@ const handleUpdateStatus = async () => {
     isUpdatingStatus.value = false
   }
 }
+
+const handleSendInvoice = async () => {
+  if (!registrationDetails.value || !registrationDetails.value.participant || !registrationDetails.value.event) {
+    sendInvoiceError.value = 'Cannot send invoice: required registration details are missing.';
+    return;
+  }
+
+  isSendingInvoice.value = true;
+  sendInvoiceError.value = null;
+  sendInvoiceSuccessMessage.value = null;
+
+  const invoiceData = {
+    email: registrationDetails.value.participant.email,
+    eventName: registrationDetails.value.event.name,
+    startDateTime: registrationDetails.value.event.startDateTime,
+    endDateTime: registrationDetails.value.event.endDateTime,
+    location: registrationDetails.value.event.location,
+  };
+
+  try {
+    const response = await sendInvoice(registrationId.value, invoiceData);
+    sendInvoiceSuccessMessage.value = response.message || 'Invoice sent successfully!';
+  } catch (err) {
+    console.error(`Failed to send invoice for registration ID ${registrationId.value}:`, err);
+    sendInvoiceError.value = err.response?.data?.message || err.message || 'Failed to send invoice.';
+  } finally {
+    isSendingInvoice.value = false;
+  }
+};
 
 // Helper functions (can be shared or moved to utilities)
 const formatDate = (dateString) => {

@@ -6,6 +6,7 @@ export const uploadImageToCloud = async (data: FormData) => {
     // Assuming backend response is { success: true, data: { ...createdUser } }
 
     return response.data;
+    
   } catch (error) {
     console.error(
       "Error uploading image:",

@@ -115,7 +115,7 @@ const toggleSidebar = () => {
     style="transition: width 0.3s; z-index: 10">
     <!-- Logo -->
     <div class="d-flex align-items-center border-bottom border-secondary p-3">
-      <img v-if="props.collapsed" src="../../assets/cat.jpeg" alt="Tecket" style="height: 2rem" />
+      <img v-if="props.collapsed" src="../../assets/logo.png" alt="Tecket" style="height: 2rem" />
       <div v-else class="fs-4 fw-bold">
         <a href="/" style="cursor: pointer; text-decoration: none;" class="text-white">Tecket</a>
       </div>
