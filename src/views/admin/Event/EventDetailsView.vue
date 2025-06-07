@@ -123,7 +123,7 @@ const formatDate = (dateString) => {
   if (!dateString) return ''
   const dateObj = new Date(dateString)
   if (isNaN(dateObj)) return ''
-  return dateObj.toLocaleDateString('en-US', {
+  return dateObj.toLocaleDateString('en-AU', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -134,15 +134,16 @@ const formatTime = (dateString) => {
   if (!dateString) return ''
   const dateObj = new Date(dateString)
   if (isNaN(dateObj)) return ''
-  return dateObj.toLocaleTimeString('en-US', {
+  return dateObj.toLocaleTimeString('en-AU', {
     hour: '2-digit',
     minute: '2-digit'
   })
 }
 
 const formatCurrency = (value) => {
-  if (typeof value !== 'number') return '$0.00';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'AUD' }).format(value);
+  const numberValue = Number(value);
+  if (isNaN(numberValue)) return '$0.00';
+  return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(numberValue);
 }
 
 const getStatusClass = (status) => {
@@ -249,12 +250,8 @@ const getStatusClass = (status) => {
 
                   <div class="col-12 col-md-6">
                     <h3 class="fs-6 fw-semibold text-muted mb-1">Capacity</h3>
-                    <p class="text-dark mb-1">{{ event.ticketsSold }} / {{ event.capacity }} tickets sold</p>
-                    <div class="progress" style="height: 0.5rem;">
-                      <div class="progress-bar bg-primary" role="progressbar"
-                        :style="{ width: (event.capacity > 0 ? (event.ticketsSold / event.capacity) * 100 : 0) + '%' }"
-                        aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
+                    <p class="text-dark mb-1">{{ event.capacity }}</p>
+
                   </div>
                   <div class="col-12 col-md-6">
                     <h3 class="fs-6 fw-semibold text-muted mb-1">Event Type</h3>
@@ -365,11 +362,6 @@ const getStatusClass = (status) => {
                   <span class="fs-6 text-muted">Revenue</span>
                   <span class="fs-6 fw-semibold">{{ formatCurrency(event.revenue) }}</span>
                 </div>
-                <!-- Placeholder for revenue progress or actual data -->
-                <div class="progress" style="height: 0.5rem;">
-                  <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0"
-                    aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
               </div>
             </div>
 
@@ -381,8 +373,9 @@ const getStatusClass = (status) => {
                   <i class="pi pi-share-alt me-2"></i>
                   Share Event
                 </button>
-                
-                <button @click="viewEventReport" class="btn btn-outline-success w-100 d-flex align-items-center" type="button">
+
+                <button @click="viewEventReport" class="btn btn-outline-success w-100 d-flex align-items-center"
+                  type="button">
                   <i class="pi pi-chart-bar me-2"></i>
                   View Reports
                 </button>
