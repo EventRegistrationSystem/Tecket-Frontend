@@ -8,7 +8,7 @@
       </div>
       <div v-else class="row">
         <div class="col-7">
-          <img :src="eventDetail.banner || defaultBanner" alt="img" class="img-fluid" />
+          <img :src="eventDetail.imageUrl || defaultBanner" alt="img" class="img-fluid" />
           <h4 class="fw-semibold mt-4">Description</h4>
           <p class="mt-3">{{ eventDetail.description }}</p>
           <h5>📅 Date & Time:</h5>
@@ -36,20 +36,12 @@
           </p>
           <div class="mapouter">
             <div class="gmap_canvas">
-              <iframe
-                width="400"
-                height="400"
-                :src="mapUrl"
-                frameborder="0"
-                scrolling="no"
-                marginheight="0"
-                marginwidth="0"
-              ></iframe>
+              <iframe width="400" height="400" :src="mapUrl" frameborder="0" scrolling="no" marginheight="0"
+                marginwidth="0"></iframe>
             </div>
           </div>
           <div class="align-item-center mt-5">
-            <button class="btn btn-outline-warning fw-semibold" 
-            @click="startRegistration">
+            <button class="btn btn-outline-warning fw-semibold" @click="startRegistration">
               Register now
             </button>
           </div>
@@ -70,7 +62,6 @@
 import navbar from '@/components/Navbar.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-// import { useUserStore } from '@/store/userStore' 
 import { useRegistrationStore } from '@/store/registrationStore'
 import { fetchEventDetails } from '@/api/eventServices'
 
@@ -79,10 +70,10 @@ const router = useRouter()
 const registrationStore = useRegistrationStore()
 const eventId = route.params.id
 
-const eventDetail = ref(null) // Initialize as null
+const eventDetail = ref(null)
 const loading = ref(true)
 const error = ref(null)
-const defaultBanner = 'https://placehold.co/800x400?text=Event+Banner' // Changed to placehold.co
+const defaultBanner = 'https://placehold.co/800x400?text=Event+Banner'
 
 // Generate a map URL based on location
 const mapUrl = computed(() => {
@@ -101,10 +92,10 @@ const formatDate = (dateStr) => {
 
 const startRegistration = () => {
   if (eventDetail.value) {
-    registrationStore.resetRegistrationState() // Clear any previous registration state
+    registrationStore.resetRegistrationState()
     registrationStore.setEvent(eventDetail.value)
     registrationStore.setCurrentStep(0) // Start at ticket selection
-    router.push({ name: 'TicketSelection' }) // Ensure this route name matches your router config
+    router.push({ name: 'TicketSelection' })
   } else {
     console.error("Event details not loaded, cannot start registration.")
     // Optionally, display an error to the user
@@ -117,8 +108,8 @@ onMounted(async () => {
   try {
     // No explicit token needed if fetchEventDetails uses httpClient which handles auth for other requests
     // and this endpoint is public or optionally authenticated.
-    const response = await fetchEventDetails(eventId) 
-    eventDetail.value = response 
+    const response = await fetchEventDetails(eventId)
+    eventDetail.value = response
     // Assuming fetchEventDetails returns the event object directly (it returns response.data.data as per eventServices.js)
     console.log('Event Details Loaded in View:', JSON.parse(JSON.stringify(eventDetail.value))); // Log a deep copy
     if (eventDetail.value && eventDetail.value.eventQuestions) {
@@ -142,7 +133,11 @@ onMounted(async () => {
   height: 400px;
   width: 400px;
 }
-p, h4, li, h1 {
+
+p,
+h4,
+li,
+h1 {
   font-family: "Font";
 }
 </style>

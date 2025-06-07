@@ -79,7 +79,8 @@
           <div class="col-md-4 mb-4" v-for="event in sortedEvents" :key="event.id" v-if="viewMode === 'grid'">
             <div class="card h-100 event-grid-card">
               <router-link :to="{ name: 'EventDetail', params: { id: event.id } }">
-                <img :src="event.banner || defaultBanner" class="card-img-top event-grid-card-img" alt="Event Banner" />
+                <img :src="event.imageUrl || defaultBanner" class="card-img-top event-grid-card-img"
+                  alt="Event Banner" />
               </router-link>
               <div class="card-body d-flex flex-column">
                 <router-link :to="{ name: 'EventDetail', params: { id: event.id } }" class="text-decoration-none">
@@ -87,7 +88,7 @@
                 </router-link>
                 <p class="card-text event-grid-date-time mb-0">
                   <small>{{ formatDate(event.startDateTime, 'date') }} at {{ formatDate(event.startDateTime, 'time')
-                  }}</small>
+                    }}</small>
                 </p>
               </div>
             </div>

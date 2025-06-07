@@ -13,7 +13,8 @@
       <!-- You can add a spinner or loading animation here -->
     </div>
 
-    <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+    <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+      role="alert">
       <strong class="font-bold">Error!</strong>
       <span class="block sm:inline"> {{ error.message || 'Failed to load event report.' }}</span>
     </div>
@@ -24,8 +25,8 @@
         <h2 class="text-xl font-semibold mb-3">{{ reportData.eventName }}</h2>
         <p class="text-gray-700 mb-2"><strong>Description:</strong> {{ reportData.eventDescription }}</p>
         <p class="text-gray-700">
-          <strong>Date:</strong> 
-          {{ formatDate(reportData.start) }} at {{ formatTime(reportData.start) }} - 
+          <strong>Date:</strong>
+          {{ formatDate(reportData.start) }} at {{ formatTime(reportData.start) }} -
           {{ formatDate(reportData.end) }} at {{ formatTime(reportData.end) }}
         </p>
       </section>
@@ -62,7 +63,8 @@
       <!-- Remaining Tickets Section -->
       <section class="mb-8 p-4 border rounded shadow-sm">
         <h2 class="text-xl font-semibold mb-3">Remaining Tickets</h2>
-        <p class="text-lg mb-2"><strong>Total Remaining Tickets:</strong> {{ reportData.remaining.remainingTickets }}</p>
+        <p class="text-lg mb-2"><strong>Total Remaining Tickets:</strong> {{ reportData.remaining.remainingTickets }}
+        </p>
         <h3 class="text-lg font-medium mb-2">Remaining by Ticket Type:</h3>
         <ul class="list-disc pl-5">
           <li v-for="ticket in reportData.remaining.remainingByTicket" :key="ticket.name">
@@ -82,6 +84,7 @@
                 <th class="py-2 px-4 border-b text-left">Name</th>
                 <th class="py-2 px-4 border-b text-left">Email</th>
                 <th class="py-2 px-4 border-b text-left">Ticket Type</th>
+                <th class="py-2 px-4 border-b text-left">Registration Status</th>
               </tr>
             </thead>
             <tbody>
@@ -93,13 +96,15 @@
                   <td class="py-2 px-4 border-b">{{ participant.name }}</td>
                   <td class="py-2 px-4 border-b">{{ participant.email }}</td>
                   <td class="py-2 px-4 border-b">{{ participant.ticket }}</td>
+                  <td class="py-2 px-4 border-b">{{ participant.registrationStatus }}</td>
                 </tr>
                 <tr v-if="isExpanded(participant.email)">
-                  <td colspan="4" class="p-4 bg-gray-50 border-b">
+                  <td colspan="5" class="p-4 bg-gray-50 border-b">
                     <h4 class="font-semibold mb-2">Questionnaire Responses:</h4>
-                    <ul v-if="participant.questionnairreResponses.length" class="list-disc pl-5">
-                      <li v-for="(qr, qrIndex) in participant.questionnairreResponses" :key="qrIndex" class="mb-1">
-                        <strong class="text-gray-700">{{ qr.question }}:</strong> {{ formatQuestionnaireResponse(qr.response) }}
+                    <ul v-if="participant.questionnaireResponses.length" class="list-disc pl-5">
+                      <li v-for="(qr, qrIndex) in participant.questionnaireResponses" :key="qrIndex" class="mb-1">
+                        <strong class="text-gray-700">{{ qr.question }}:</strong> {{
+                        formatQuestionnaireResponse(qr.response) }}
                       </li>
                     </ul>
                     <p v-else class="text-gray-500">No responses for this participant.</p>
@@ -107,7 +112,7 @@
                 </tr>
               </template>
               <tr v-if="!reportData.participants.length">
-                <td colspan="4" class="py-2 px-4 border-b text-center text-gray-500">No participants found.</td>
+                <td colspan="5" class="py-2 px-4 border-b text-center text-gray-500">No participants found.</td>
               </tr>
             </tbody>
           </table>
@@ -118,7 +123,8 @@
       <section class="p-4 border rounded shadow-sm">
         <h2 class="text-xl font-semibold mb-3">Aggregated Question Responses</h2>
         <div v-if="Object.keys(reportData.questions).length">
-          <div v-for="(responses, question) in reportData.questions" :key="question" class="mb-4 p-3 bg-gray-50 rounded">
+          <div v-for="(responses, question) in reportData.questions" :key="question"
+            class="mb-4 p-3 bg-gray-50 rounded">
             <h3 class="text-lg font-medium mb-1">{{ question }}</h3>
             <ul class="list-disc pl-5">
               <li v-for="(count, option) in responses" :key="option">
