@@ -213,6 +213,48 @@ const handleValidation = () => {
   return isValid;
 };
 
+const getTicketPayload = (ticket) => ({
+  name: ticket.name,
+  price: Number(ticket.price),
+  quantityTotal: Number(ticket.quantity),
+  description: ticket.description,
+  salesStart: ticket.salesStart ? combineDateAndTime(ticket.salesStart, "00:00:00") : null,
+  salesEnd: ticket.salesEnd ? combineDateAndTime(ticket.salesEnd, "23:59:59") : null,
+});
+
+const getQuestionPayload = (q, index) => {
+  let backendQuestionType = q.type.toUpperCase();
+  if (q.type === "select") {
+    backendQuestionType = "DROPDOWN";
+  } else if (q.type === "textarea") {
+    backendQuestionType = "TEXT";
+  } else if (q.type === "radio") {
+    backendQuestionType = "DROPDOWN";
+  } else if (q.type === "checkbox") {
+    backendQuestionType = "CHECKBOX";
+  }
+
+  const questionPayload = {
+    eventQuestionId: q.backendEventQuestionId,
+    questionId: q.backendQuestionId,
+    questionText: q.text,
+    questionType: backendQuestionType,
+    isRequired: q.required,
+    displayOrder: q.order !== undefined ? q.order : index + 1,
+  };
+
+  if (
+    (backendQuestionType === "DROPDOWN" || backendQuestionType === "CHECKBOX") &&
+    Array.isArray(q.options)
+  ) {
+    questionPayload.options = q.options.map((optText, optIndex) => ({
+      optionText: optText,
+      displayOrder: optIndex + 1,
+    }));
+  }
+  return questionPayload;
+};
+
 const saveEvent = async () => {
   if (!handleValidation()) {
     scrollToFirstError(errors.value);
@@ -231,77 +273,68 @@ const saveEvent = async () => {
         eventForm.value.endDate,
         eventForm.value.endTime
       ),
-      tickets: eventForm.value.isFree
-        ? []
-        : ticketTypes.value.map((ticket) => ({
-            id: ticket.id,
-            name: ticket.name,
-            price: Number(ticket.price),
-            quantityTotal: Number(ticket.quantity),
-            description: ticket.description,
-            salesStart: ticket.salesStart
-              ? combineDateAndTime(ticket.salesStart, "00:00:00")
-              : null,
-            salesEnd: ticket.salesEnd
-              ? combineDateAndTime(ticket.salesEnd, "23:59:59")
-              : null,
-          })),
-      questions: questions.value.map((q, index) => {
-        let backendQuestionType = q.type.toUpperCase();
-        if (q.type === "select") {
-          backendQuestionType = "DROPDOWN";
-        } else if (q.type === "textarea") {
-          backendQuestionType = "TEXT";
-        } else if (q.type === "radio") {
-          // 'radio' on frontend maps to 'DROPDOWN' on backend for single choice
-          backendQuestionType = "DROPDOWN";
-        } else if (q.type === "checkbox") {
-          // 'checkbox' on frontend maps to 'CHECKBOX' on backend
-          backendQuestionType = "CHECKBOX";
-        }
-        // Other types like date, email, number might map to TEXT or specific backend types
-
-        const questionPayload = {
-          eventQuestionId: q.backendEventQuestionId,
-          questionId: q.backendQuestionId,
-          questionText: q.text,
-          questionType: backendQuestionType,
-          isRequired: q.required,
-          displayOrder: q.order !== undefined ? q.order : index + 1,
-        };
-
-        if (
-          (backendQuestionType === "DROPDOWN" ||
-            backendQuestionType === "CHECKBOX") &&
-          Array.isArray(q.options)
-        ) {
-          questionPayload.options = q.options.map((optText, optIndex) => ({
-            // For existing options, we might need to send their IDs if backend supports option updates by ID
-            optionText: optText,
-            displayOrder: optIndex + 1,
-          }));
-        }
-        return questionPayload;
-      }),
     };
 
-    // Remove address fields if not provided, to avoid sending empty strings if backend expects null/omitted
+    // Remove address fields if not provided
     if (!eventPayload.address) delete eventPayload.address;
     if (!eventPayload.city) delete eventPayload.city;
     if (!eventPayload.state) delete eventPayload.state;
     if (!eventPayload.zipCode) delete eventPayload.zipCode;
     if (!eventPayload.imageUrl) delete eventPayload.imageUrl;
 
-    console.log(
-      "Event Payload being sent:",
-      JSON.stringify(eventPayload, null, 2)
-    );
+    let currentEventId = eventId;
 
     if (isEditMode.value) {
-      await updateEvent(eventId, eventPayload);
+      await updateEvent(currentEventId, eventPayload);
     } else {
-      await createEvent(eventPayload);
+      const newEvent = await createEvent(eventPayload);
+      currentEventId = newEvent.id;
     }
+
+    // Synchronize tickets
+    const originalTicketIds = originalTicketTypes.value.map(t => t.id);
+    const currentTicketIds = ticketTypes.value.map(t => t.id).filter(id => id);
+
+    for (const ticket of ticketTypes.value) {
+      const payload = getTicketPayload(ticket);
+      if (ticket.id) { // Existing ticket
+        const originalTicket = originalTicketTypes.value.find(t => t.id === ticket.id);
+        if (JSON.stringify(getTicketPayload(originalTicket)) !== JSON.stringify(payload)) {
+          await updateTicketForEvent(currentEventId, ticket.id, payload);
+        }
+      } else { // New ticket
+        await createTicketForEvent(currentEventId, payload);
+      }
+    }
+
+    for (const originalTicket of originalTicketTypes.value) {
+      if (!currentTicketIds.includes(originalTicket.id)) {
+        await deleteTicketForEvent(currentEventId, originalTicket.id);
+      }
+    }
+
+    // Synchronize questions
+    const originalQuestionIds = originalQuestions.value.map(q => q.id);
+    const currentQuestionIds = questions.value.map(q => q.id).filter(id => id);
+
+    for (const [index, question] of questions.value.entries()) {
+      const payload = getQuestionPayload(question, index);
+      if (question.id) { // Existing question
+        const originalQuestion = originalQuestions.value.find(q => q.id === question.id);
+        if (JSON.stringify(getQuestionPayload(originalQuestion, index)) !== JSON.stringify(payload)) {
+          await updateEventQuestion(currentEventId, question.id, payload);
+        }
+      } else { // New question
+        await createEventQuestion(currentEventId, payload);
+      }
+    }
+
+    for (const originalQuestion of originalQuestions.value) {
+      if (!currentQuestionIds.includes(originalQuestion.id)) {
+        await deleteEventQuestion(currentEventId, originalQuestion.id);
+      }
+    }
+
     router.push("/admin/events");
   } catch (err) {
     console.error(
@@ -311,7 +344,6 @@ const saveEvent = async () => {
     errors.value.submit =
       err.message || "Failed to save event. Please try again.";
     if (err.errors) {
-      // If backend sends specific field errors
       Object.assign(errors.value, err.errors);
     }
   } finally {

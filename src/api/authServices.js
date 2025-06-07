@@ -56,7 +56,6 @@ export const registerUser = async (userData) => {
 export const logoutUser = async () => {
   try {
     // The request interceptor in httpClient adds the Bearer token and sets withCredentials for /auth/logout.
-
     const response = await httpClient.post('/auth/logout');
     return response.data;
 
