@@ -21,7 +21,18 @@ import {
   updateEventQuestion,
   deleteEventQuestion,
 } from "@/api/questionServices.js";
-import { uploadImageToCloud } from "@/api/imageServices";
+
+// Import components and utilities
+import EventBasicInfo from "./components/EventBasicInfo.vue";
+import EventTickets from "./components/EventTickets.vue";
+import EventQuestionnaire from "./components/EventQuestionnaire.vue";
+import { 
+  parseDate, 
+  parseTime, 
+  combineDateAndTime, 
+  getDefaultFormState 
+} from "./utils/eventFormUtils.js";
+import { validateEventForm, scrollToFirstError } from "./utils/eventFormValidation.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -62,60 +73,6 @@ const ticketTypes = ref([]);
 
 // Error messages for form validation
 const errors = ref({});
-
-// helper function: extract date from ISO time string, format is YYYY-MM-DD
-const parseDate = (dateTimeString) => {
-  if (!dateTimeString) return "";
-  const dateObj = new Date(dateTimeString);
-  if (isNaN(dateObj)) return "";
-  const year = dateObj.getFullYear();
-  const month = (dateObj.getMonth() + 1).toString().padStart(2, "0");
-  const day = dateObj.getDate().toString().padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-// Auxiliary function: extracts the time from the ISO time string in the format HH:MM (24-hour format)
-const parseTime = (dateTimeString) => {
-  if (!dateTimeString) return "";
-  const dateObj = new Date(dateTimeString);
-  if (isNaN(dateObj)) return "";
-  const hours = dateObj.getHours().toString().padStart(2, "0");
-  const minutes = dateObj.getMinutes().toString().padStart(2, "0");
-  return `${hours}:${minutes}`;
-};
-
-// Helper function to combine date and time strings into ISO 8601 format
-const combineDateAndTime = (dateString, timeString) => {
-  if (
-    !dateString ||
-    typeof dateString !== "string" ||
-    !dateString.match(/^\d{4}-\d{2}-\d{2}$/)
-  ) {
-    console.error(
-      "Invalid or empty dateString provided to combineDateAndTime:",
-      dateString
-    );
-    return null;
-  }
-
-  let timePart = "00:00:00";
-  if (timeString && typeof timeString === "string") {
-    if (timeString.match(/^\d{2}:\d{2}$/)) {
-      timePart = `${timeString}:00`;
-    } else if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
-      timePart = timeString;
-    }
-  }
-
-  const isoString = `${dateString}T${timePart}.000Z`;
-
-  const date = new Date(isoString);
-  if (isNaN(date.getTime())) {
-    console.error("Invalid date or time for ISO conversion:", isoString);
-    return null;
-  }
-  return date.toISOString();
-};
 
 const originalTicketTypes = ref([]);
 const originalQuestions = ref([]);
@@ -211,7 +168,7 @@ onMounted(async () => {
             order: q.displayOrder !== undefined ? q.displayOrder : 0,
             category: q.question.category || "",
             backendQuestionId: q.question.id, // This is Question.id
-            backendEventQuestionId: q.id, // Redundant, same as id above
+            backendEventQuestionId: q.id, 
           };
         });
         originalQuestions.value = JSON.parse(JSON.stringify(questions.value));
@@ -246,144 +203,19 @@ onMounted(async () => {
   }
 });
 
-// Verify that the form inputs are correct
-const validateForm = () => {
-  errors.value = {};
-  if (!eventForm.value.name) errors.value.name = "Event name is required";
-  if (!eventForm.value.startDate)
-    errors.value.startDate = "Event start date is required";
-  if (!eventForm.value.endDate)
-    errors.value.endDate = "Event end date is required";
-  if (
-    eventForm.value.startDate &&
-    new Date(eventForm.value.startDate) < new Date()
-  ) {
-    // Allow past dates for editing, but not for new events if that's a requirement (not strictly enforced here)
-    // errors.value.startDate = 'Event start date must be in the future';
-  }
-  if (
-    eventForm.value.startDate &&
-    eventForm.value.endDate &&
-    new Date(eventForm.value.endDate) < new Date(eventForm.value.startDate)
-  ) {
-    errors.value.endDate = "End date must be after start date";
-  }
-  if (!eventForm.value.location) errors.value.location = "Location is required";
-  if (!eventForm.value.capacity || eventForm.value.capacity <= 0)
-    errors.value.capacity = "Valid capacity is required";
-  if (!eventForm.value.eventType)
-    errors.value.eventType = "Event type is required";
-
-  if (eventForm.value.isFree === false && ticketTypes.value.length === 0) {
-    errors.value.tickets =
-      "At least one ticket type is required for paid events.";
-  }
-  if (eventForm.value.isFree === false) {
-    ticketTypes.value.forEach((ticket, index) => {
-      if (!ticket.name)
-        errors.value[`ticket_${index}_name`] = `Ticket ${
-          index + 1
-        } name is required.`;
-      if (ticket.price === undefined || ticket.price < 0)
-        errors.value[`ticket_${index}_price`] = `Ticket ${
-          index + 1
-        } price is invalid.`;
-      if (ticket.quantity === undefined || ticket.quantity <= 0)
-        errors.value[`ticket_${index}_quantity`] = `Ticket ${
-          index + 1
-        } quantity is invalid.`;
-
-      if (!ticket.salesStart) {
-        errors.value[`ticket_${index}_salesStart`] = `Ticket ${
-          index + 1
-        } sales start date is required.`;
-      } else if (!ticket.salesStart.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        errors.value[`ticket_${index}_salesStart`] = `Ticket ${
-          index + 1
-        } sales start date must be a valid date (YYYY-MM-DD).`;
-      }
-
-      if (!ticket.salesEnd) {
-        errors.value[`ticket_${index}_salesEnd`] = `Ticket ${
-          index + 1
-        } sales end date is required.`;
-      } else if (!ticket.salesEnd.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        errors.value[`ticket_${index}_salesEnd`] = `Ticket ${
-          index + 1
-        } sales end date must be a valid date (YYYY-MM-DD).`;
-      }
-
-      if (
-        ticket.salesStart &&
-        ticket.salesEnd &&
-        ticket.salesStart.match(/^\d{4}-\d{2}-\d{2}$/) &&
-        ticket.salesEnd.match(/^\d{4}-\d{2}-\d{2}$/) &&
-        new Date(ticket.salesEnd) < new Date(ticket.salesStart)
-      ) {
-        errors.value[`ticket_${index}_salesEnd`] = `Ticket ${
-          index + 1
-        } sales end date must be after sales start date.`;
-      }
-    });
-  }
-
-  if (questions.value.length === 0) {
-    // Making questions optional for now, can be changed if needed
-    // errors.value.questions = 'At least one question is required.';
-  } else {
-    questions.value.forEach((q, index) => {
-      if (!q.text.trim())
-        errors.value[`question_${index}_text`] = `Question ${
-          index + 1
-        } text is required.`;
-      // Add validation for options if question type is 'select' (DROPDOWN) or 'checkbox'
-      if (
-        (q.type === "select" || q.type === "checkbox") &&
-        (!q.options ||
-          q.options.length === 0 ||
-          q.options.some((opt) => !opt.trim()))
-      ) {
-        errors.value[`question_${index}_options`] = `Question ${index + 1} (${
-          q.type === "select" ? "Dropdown" : "Checkboxes"
-        }) must have at least one non-empty option.`;
-      }
-    });
-  }
-
-  return Object.keys(errors.value).length === 0;
-};
-
-const addTicketType = () => {
-  ticketTypes.value.push({
-    id: Date.now(), // Temporary ID for v-for key, backend will assign real ID
-    name: "",
-    price: 0.0,
-    quantity: 1,
-    description: "",
-    salesStart: "",
-    salesEnd: "",
-  });
-};
-
-const removeTicketType = (index) => {
-  ticketTypes.value.splice(index, 1);
+const handleValidation = () => {
+  const { isValid, errors: validationErrors } = validateEventForm(
+    eventForm.value,
+    ticketTypes.value,
+    questions.value
+  );
+  errors.value = validationErrors;
+  return isValid;
 };
 
 const saveEvent = async () => {
-  if (!validateForm()) {
-    const firstErrorKey = Object.keys(errors.value)[0];
-    if (firstErrorKey) {
-      const errorElement =
-        document.querySelector(`[name="${firstErrorKey}"]`) ||
-        document.querySelector(`.${firstErrorKey}`) ||
-        document.querySelector(`#${firstErrorKey}`);
-      if (errorElement && typeof errorElement.scrollIntoView === "function") {
-        errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      } else {
-        const mainForm = document.querySelector("form");
-        mainForm?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
+  if (!handleValidation()) {
+    scrollToFirstError(errors.value);
     return;
   }
   saving.value = true;
@@ -402,13 +234,7 @@ const saveEvent = async () => {
       tickets: eventForm.value.isFree
         ? []
         : ticketTypes.value.map((ticket) => ({
-            id:
-              isEditMode.value &&
-              ticket.id &&
-              !isNaN(parseInt(ticket.id)) &&
-              Number.isInteger(Number(ticket.id))
-                ? Number(ticket.id)
-                : undefined, // Send ID only if it's a valid existing ID
+            id: ticket.id,
             name: ticket.name,
             price: Number(ticket.price),
             quantityTotal: Number(ticket.quantity),
@@ -436,14 +262,8 @@ const saveEvent = async () => {
         // Other types like date, email, number might map to TEXT or specific backend types
 
         const questionPayload = {
-          eventQuestionId:
-            isEditMode.value && q.backendEventQuestionId
-              ? q.backendEventQuestionId
-              : undefined,
-          questionId:
-            isEditMode.value && q.backendQuestionId
-              ? q.backendQuestionId
-              : undefined,
+          eventQuestionId: q.backendEventQuestionId,
+          questionId: q.backendQuestionId,
           questionText: q.text,
           questionType: backendQuestionType,
           isRequired: q.required,
@@ -503,56 +323,7 @@ const cancelForm = () => {
   router.push("/admin/events");
 };
 
-const addQuestion = () => {
-  const newId = `new_${Date.now()}`; // Temporary frontend ID
-  questions.value.push({
-    id: newId,
-    text: "",
-    type: "text",
-    required: false,
-    options: ["Option 1"],
-    hasMaxLength: false,
-    maxLength: 255,
-    order: questions.value.length + 1,
-  });
-};
 
-const removeQuestion = (index) => {
-  questions.value.splice(index, 1);
-};
-
-const addOption = (question) => {
-  question.options.push(`Option ${question.options.length + 1}`);
-};
-
-const removeOption = (question, optionIndex) => {
-  if (question.options.length > 1) {
-    question.options.splice(optionIndex, 1);
-  }
-};
-
-var selectedImageFile = null; // To store the File object
-var imageCloudUrl = null;
-
-const uploadImage = async (file) => {
-  const formData = new FormData();
-  formData.append("image", file);
-
-  const result = await uploadImageToCloud(formData);
-  imageCloudUrl = result.data.url;
-};
-
-const loadImage = (event) => {
-  event.preventDefault();
-  const file = event.target.files[0];
-  if (file) {
-    selectedImageFile = file;
-    uploadImage(selectedImageFile);
-  } else {
-    selectedImageFile = null;
-    console.log("No image selected.");
-  }
-};
 </script>
 
 <template>
@@ -627,519 +398,28 @@ const loadImage = (event) => {
         <div class="bg-white rounded shadow-sm p-4">
           <form @submit.prevent="saveEvent">
             <!-- Basic Info Tab -->
-            <div v-if="activeTab === 'basic'" class="mb-4">
-              <div class="mb-3">
-                <label class="form-label">
-                  Event Name <span class="text-danger">*</span>
-                </label>
-                <input
-                  v-model="eventForm.name"
-                  type="text"
-                  placeholder="Enter event name"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.name }"
-                />
-                <div v-if="errors.name" class="invalid-feedback">
-                  {{ errors.name }}
-                </div>
-              </div>
-              <!-- Event Image Uploader -->
-              <div class="mb-3">
-                <label class="form-label">
-                  Event Image <span class="text-danger">*</span>
-                </label>
-                <input
-                  type="file"
-                  v-on:change="loadImage"
-                  required
-                  accept="image/png, image/jpeg, image/jpg "
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea
-                  v-model="eventForm.description"
-                  placeholder="Describe your event"
-                  rows="4"
-                  class="form-control"
-                ></textarea>
-              </div>
-              <!-- Location Field -->
-              <div class="mb-3">
-                <label class="form-label">
-                  Location <span class="text-danger">*</span>
-                </label>
-                <input
-                  v-model="eventForm.location"
-                  type="text"
-                  placeholder="Enter venue or location"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.location }"
-                />
-                <div v-if="errors.location" class="invalid-feedback">
-                  {{ errors.location }}
-                </div>
-              </div>
-              <div class="mb-3">
-                <p class="small fst-italic text-muted">
-                  The address information helps attendees locate your event. It
-                  will be displayed on the event details page.
-                </p>
-              </div>
-              <div class="row g-3">
-                <div class="col-12 col-md-3">
-                  <label class="form-label">
-                    Start Date <span class="text-danger">*</span>
-                  </label>
-                  <input
-                    v-model="eventForm.startDate"
-                    type="date"
-                    class="form-control"
-                    :class="{ 'is-invalid': errors.startDate }"
-                  />
-                  <div v-if="errors.startDate" class="invalid-feedback">
-                    {{ errors.startDate }}
-                  </div>
-                </div>
-                <div class="col-12 col-md-3">
-                  <label class="form-label">
-                    End Date <span class="text-danger">*</span>
-                  </label>
-                  <input
-                    v-model="eventForm.endDate"
-                    type="date"
-                    class="form-control"
-                    :class="{ 'is-invalid': errors.endDate }"
-                  />
-                  <div v-if="errors.endDate" class="invalid-feedback">
-                    {{ errors.endDate }}
-                  </div>
-                </div>
-                <div class="col-12 col-md-3">
-                  <label class="form-label">Start Time</label>
-                  <input
-                    v-model="eventForm.startTime"
-                    type="time"
-                    class="form-control"
-                  />
-                </div>
-                <div class="col-12 col-md-3">
-                  <label class="form-label">End Time</label>
-                  <input
-                    v-model="eventForm.endTime"
-                    type="time"
-                    class="form-control"
-                  />
-                </div>
-              </div>
-              <div class="mb-3 mt-3">
-                <label class="form-label">Organizer</label>
-                <input
-                  v-model="eventForm.organizer"
-                  type="text"
-                  placeholder="Organizing company or person"
-                  class="form-control"
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">
-                  Capacity <span class="text-danger">*</span>
-                </label>
-                <input
-                  v-model="eventForm.capacity"
-                  type="number"
-                  min="1"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.capacity }"
-                />
-                <div v-if="errors.capacity" class="invalid-feedback">
-                  {{ errors.capacity }}
-                </div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label"
-                  >Event Type <span class="text-danger">*</span></label
-                >
-                <select
-                  v-model="eventForm.eventType"
-                  class="form-select"
-                  :class="{ 'is-invalid': errors.eventType }"
-                >
-                  <option value="" disabled>Select event type</option>
-                  <option value="SPORTS">Sports</option>
-                  <option value="MUSICAL">Musical</option>
-                  <option value="SOCIAL">Social</option>
-                  <option value="VOLUNTEERING">Volunteering</option>
-                  <option value="CONFERENCE">Conference</option>
-                </select>
-                <div v-if="errors.eventType" class="invalid-feedback">
-                  {{ errors.eventType }}
-                </div>
-              </div>
-              <div class="mb-3 form-check">
-                <input
-                  type="checkbox"
-                  class="form-check-input"
-                  id="isFreeEvent"
-                  v-model="eventForm.isFree"
-                />
-                <label class="form-check-label" for="isFreeEvent"
-                  >This is a free event</label
-                >
-              </div>
-            </div>
+            <EventBasicInfo
+              v-if="activeTab === 'basic'"
+              v-model:eventForm="eventForm"
+              :errors="errors"
+              @image-uploaded="(url) => eventForm.imageUrl = url"
+            />
 
             <!-- Tickets Tab -->
-            <div v-if="activeTab === 'tickets'" class="mb-4">
-              <div v-if="errors.tickets" class="alert alert-danger">
-                {{ errors.tickets }}
-              </div>
-              <div
-                v-for="(ticket, index) in ticketTypes"
-                :key="ticket.id"
-                class="bg-light p-3 rounded mb-3"
-              >
-                <div
-                  class="d-flex justify-content-between align-items-start mb-3"
-                >
-                  <h3 class="h6 mb-0">Ticket Type {{ index + 1 }}</h3>
-                  <button
-                    v-if="ticketTypes.length > 1 || !isEditMode"
-                    @click="removeTicketType(index)"
-                    type="button"
-                    class="btn btn-link text-danger p-0"
-                  >
-                    <i class="pi pi-trash"></i>
-                  </button>
-                </div>
-                <div class="row g-3 mb-3">
-                  <div class="col-12 col-md-6">
-                    <label class="form-label">Name</label>
-                    <input
-                      v-model="ticket.name"
-                      type="text"
-                      placeholder="e.g. General Admission"
-                      class="form-control"
-                    />
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label class="form-label">Description</label>
-                    <input
-                      v-model="ticket.description"
-                      type="text"
-                      placeholder="Brief description"
-                      class="form-control"
-                    />
-                  </div>
-                </div>
-                <div class="row g-3 mb-3">
-                  <div class="col-12 col-md-6">
-                    <label class="form-label"
-                      >Price ($) <span class="text-danger">*</span></label
-                    >
-                    <input
-                      :id="`ticket_price_${index}`"
-                      :name="`ticket_${index}_price`"
-                      v-model.number="ticket.price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      class="form-control"
-                      :class="{ 'is-invalid': errors[`ticket_${index}_price`] }"
-                    />
-                    <div
-                      v-if="errors[`ticket_${index}_price`]"
-                      class="invalid-feedback"
-                    >
-                      {{ errors[`ticket_${index}_price`] }}
-                    </div>
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label class="form-label"
-                      >Quantity Available
-                      <span class="text-danger">*</span></label
-                    >
-                    <input
-                      :id="`ticket_quantity_${index}`"
-                      :name="`ticket_${index}_quantity`"
-                      v-model.number="ticket.quantity"
-                      type="number"
-                      min="1"
-                      class="form-control"
-                      :class="{
-                        'is-invalid': errors[`ticket_${index}_quantity`],
-                      }"
-                    />
-                    <div
-                      v-if="errors[`ticket_${index}_quantity`]"
-                      class="invalid-feedback"
-                    >
-                      {{ errors[`ticket_${index}_quantity`] }}
-                    </div>
-                  </div>
-                </div>
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label
-                      :for="`ticket_salesStart_${index}`"
-                      class="form-label"
-                      >Sales Start Date
-                      <span class="text-danger">*</span></label
-                    >
-                    <input
-                      :id="`ticket_salesStart_${index}`"
-                      :name="`ticket_${index}_salesStart`"
-                      type="date"
-                      v-model="ticket.salesStart"
-                      class="form-control"
-                      :class="{
-                        'is-invalid': errors[`ticket_${index}_salesStart`],
-                      }"
-                    />
-                    <div
-                      v-if="errors[`ticket_${index}_salesStart`]"
-                      class="invalid-feedback"
-                    >
-                      {{ errors[`ticket_${index}_salesStart`] }}
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <label :for="`ticket_salesEnd_${index}`" class="form-label"
-                      >Sales End Date <span class="text-danger">*</span></label
-                    >
-                    <input
-                      :id="`ticket_salesEnd_${index}`"
-                      :name="`ticket_${index}_salesEnd`"
-                      type="date"
-                      v-model="ticket.salesEnd"
-                      class="form-control"
-                      :class="{
-                        'is-invalid': errors[`ticket_${index}_salesEnd`],
-                      }"
-                    />
-                    <div
-                      v-if="errors[`ticket_${index}_salesEnd`]"
-                      class="invalid-feedback"
-                    >
-                      {{ errors[`ticket_${index}_salesEnd`] }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="mb-3">
-                <button
-                  @click="addTicketType"
-                  type="button"
-                  class="btn btn-link text-primary"
-                >
-                  <i class="pi pi-plus me-1"></i>
-                  Add Another Ticket Type
-                </button>
-              </div>
-              <div class="alert alert-warning">
-                <h4 class="h6">Important Note</h4>
-                <p class="small">
-                  Make sure the total number of tickets available does not
-                  exceed the event capacity. Current capacity:
-                  {{ eventForm.capacity }} attendees.
-                </p>
-              </div>
-            </div>
+            <EventTickets
+              v-if="activeTab === 'tickets'"
+              v-model:ticketTypes="ticketTypes"
+              :eventForm="eventForm"
+              :errors="errors"
+              :isEditMode="isEditMode"
+            />
 
             <!-- Questionnaire Tab -->
-            <div v-if="activeTab === 'questionnaire'" class="mb-4">
-              <div
-                class="d-flex justify-content-between align-items-center mb-3"
-              >
-                <div>
-                  <h3 class="h6">Registration Questions</h3>
-                  <p class="small text-muted">
-                    Create questions that attendees will answer during
-                    registration
-                  </p>
-                </div>
-                <button
-                  @click="addQuestion"
-                  type="button"
-                  class="btn btn-primary d-flex align-items-center"
-                >
-                  <i class="pi pi-plus me-2"></i>
-                  Add Question
-                </button>
-              </div>
-              <div
-                v-if="!questions.length && errors.questions"
-                class="alert alert-danger"
-              >
-                {{ errors.questions }}
-              </div>
-              <div
-                v-if="!questions.length && !errors.questions"
-                class="alert alert-light text-center"
-              >
-                <div class="text-muted mb-2">
-                  <i class="pi pi-list-alt"></i>
-                </div>
-                <h4 class="h6 mb-2">No questions</h4>
-                <p class="small text-muted mb-3">
-                  Add questions to collect information from your attendees
-                  during registration
-                </p>
-                <button
-                  @click="addQuestion"
-                  type="button"
-                  class="btn btn-primary d-inline-flex align-items-center"
-                >
-                  <i class="pi pi-plus me-2"></i>
-                  Add First Question
-                </button>
-              </div>
-              <div v-else class="mb-4">
-                <div
-                  v-for="(question, index) in questions"
-                  :key="question.id"
-                  class="bg-white border rounded overflow-hidden mb-3"
-                >
-                  <!-- Question header -->
-                  <div
-                    class="bg-light px-3 py-2 d-flex justify-content-between align-items-center border-bottom"
-                  >
-                    <div class="d-flex align-items-center">
-                      <i
-                        class="pi pi-bars text-muted me-3"
-                        style="cursor: move"
-                      ></i>
-                      <span class="fw-semibold text-dark"
-                        >Question {{ index + 1 }}</span
-                      >
-                      <span
-                        v-if="question.required"
-                        class="small bg-danger text-white px-2 py-1 rounded-pill ms-2"
-                      >
-                        Required
-                      </span>
-                    </div>
-                    <div class="d-flex align-items-center">
-                      <span
-                        class="small text-muted bg-light px-2 py-1 rounded me-2"
-                      >
-                        {{ question.type }}
-                      </span>
-                      <button
-                        @click="removeQuestion(index)"
-                        type="button"
-                        class="btn btn-link text-danger p-0"
-                      >
-                        <i class="pi pi-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <!-- Question content -->
-                  <div class="p-3">
-                    <div class="mb-3">
-                      <label :for="`question_text_${index}`" class="form-label"
-                        >Question Text</label
-                      >
-                      <input
-                        :id="`question_text_${index}`"
-                        :name="`question_${index}_text`"
-                        v-model="question.text"
-                        type="text"
-                        placeholder="Enter your question"
-                        class="form-control"
-                        :class="{
-                          'is-invalid': errors[`question_${index}_text`],
-                        }"
-                      />
-                      <div
-                        v-if="errors[`question_${index}_text`]"
-                        class="invalid-feedback"
-                      >
-                        {{ errors[`question_${index}_text`] }}
-                      </div>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Question Type</label>
-                      <select v-model="question.type" class="form-select">
-                        <option value="text">Text Input</option>
-                        <option value="select">Dropdown</option>
-                        <option value="checkbox">
-                          Checkboxes (multiple selection)
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <!-- Options for select, radio or checkbox types -->
-                  <div
-                    v-if="
-                      ['select', 'radio', 'checkbox'].includes(question.type)
-                    "
-                    class="mb-3 p-3 border-top"
-                  >
-                    <label class="form-label mb-2">Options</label>
-                    <div
-                      v-if="errors[`question_${index}_options`]"
-                      class="alert alert-danger small p-2"
-                    >
-                      {{ errors[`question_${index}_options`] }}
-                    </div>
-                    <div
-                      v-for="(option, optionIndex) in question.options"
-                      :key="optionIndex"
-                      class="d-flex align-items-center mb-2"
-                    >
-                      <input
-                        v-model="question.options[optionIndex]"
-                        type="text"
-                        placeholder="Option text"
-                        class="form-control"
-                      />
-                      <button
-                        @click="removeOption(question, optionIndex)"
-                        type="button"
-                        class="btn btn-link text-danger ms-2"
-                        :disabled="question.options.length <= 1"
-                      >
-                        <i class="pi pi-times"></i>
-                      </button>
-                    </div>
-                    <button
-                      @click="addOption(question)"
-                      type="button"
-                      class="btn btn-link text-primary mt-2 small"
-                    >
-                      <i class="pi pi-plus me-1"></i>
-                      Add Option
-                    </button>
-                  </div>
-                  <!-- Additional settings -->
-                  <div class="p-3 border-top d-flex align-items-center gap-3">
-                    <label class="d-flex align-items-center mb-0">
-                      <input
-                        v-model="question.required"
-                        type="checkbox"
-                        class="form-check-input me-2"
-                      />
-                      <span class="small text-dark">Required</span>
-                    </label>
-                    <label
-                      v-if="
-                        question.type === 'text' || question.type === 'textarea'
-                      "
-                      class="d-flex align-items-center mb-0"
-                    >
-                      <input
-                        v-model="question.hasMaxLength"
-                        type="checkbox"
-                        class="form-check-input me-2"
-                      />
-                      <span class="small text-dark">Set max length</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <EventQuestionnaire
+              v-if="activeTab === 'questionnaire'"
+              v-model:questions="questions"
+              :errors="errors"
+            />
 
             <!-- Form Action Buttons -->
             <div v-if="errors.submit" class="alert alert-danger">
