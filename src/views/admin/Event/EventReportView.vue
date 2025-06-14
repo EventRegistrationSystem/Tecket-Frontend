@@ -105,7 +105,11 @@
                   <td class="py-2 px-4 border-b">{{ participant.name }}</td>
                   <td class="py-2 px-4 border-b">{{ participant.email }}</td>
                   <td class="py-2 px-4 border-b">{{ participant.ticket }}</td>
-                  <td class="py-2 px-4 border-b">{{ participant.registrationStatus }}</td>
+                  <td class="py-2 px-4 border-b">
+                    <span :class="getStatusClass(participant.registrationStatus)" class="px-2 py-1 rounded-full text-xs font-semibold">
+                      {{ participant.registrationStatus }}
+                    </span>
+                  </td>
                 </tr>
                 <tr v-if="isExpanded(participant.email)">
                   <td colspan="5" class="p-4 bg-gray-50 border-b">
@@ -222,6 +226,19 @@ const isExpanded = (participantEmail) => {
   return expandedParticipants.value.includes(participantEmail);
 };
 
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'CONFIRMED':
+      return 'bg-green-100 text-green-800';
+    case 'PENDING':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'CANCELLED':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
 onMounted(() => {
   fetchReportData();
 });
@@ -301,6 +318,21 @@ const generatePDF = () => {
     body: participantData,
     theme: 'striped',
     headStyles: { fillColor: [243, 156, 18] },
+    didParseCell: function (data) {
+      if (data.column.dataKey === 3) { // 'Status' column
+        switch (data.cell.raw) {
+          case 'CONFIRMED':
+            data.cell.styles.textColor = [0, 128, 0]; // Green
+            break;
+          case 'PENDING':
+            data.cell.styles.textColor = [255, 165, 0]; // Orange
+            break;
+          case 'CANCELLED':
+            data.cell.styles.textColor = [255, 0, 0]; // Red
+            break;
+        }
+      }
+    }
   });
 
   // Aggregated Question Responses
