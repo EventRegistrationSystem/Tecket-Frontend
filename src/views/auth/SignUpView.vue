@@ -138,6 +138,13 @@
               {{ errors.confirmPwd }}
             </div>
           </div>
+          <div class="mb-3 text-start">
+            <label for="role" class="form-label" style="font-family: 'Font'">Role</label>
+            <select id="role" v-model="role" class="form-select" style="background-color: #fcfcfa">
+              <option value="PARTICIPANT">Participant</option>
+              <option value="ORGANIZER">Organizer</option>
+            </select>
+          </div>
           <!-- Display general error message -->
           <div v-if="errors.general" class="alert alert-danger mt-3" role="alert">
             {{ errors.general }}
@@ -176,6 +183,7 @@ const phoneNo = ref('');
 const email = ref('');
 const pwd = ref('');
 const confirmPwd = ref('');
+const role = ref('ORGANIZER'); 
 const errors = ref({
   firstName: null,
   lastName: null,
@@ -261,6 +269,7 @@ const signUp = async () => {
     firstName: firstName.value.trim(),
     lastName: lastName.value.trim(),
     phoneNo: phoneNo.value.trim() || undefined,
+    role: role.value,
   };
 
   try {
