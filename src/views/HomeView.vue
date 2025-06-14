@@ -56,7 +56,7 @@
       <div class="row">
         <div v-for="event in events" :key="event.id" class="col-md-4 mb-4">
           <div class="card h-100">
-            <img :src="event.imageUrl || 'https://via.placeholder.com/300x200?text=Event+Image'" class="card-img-top" alt="Event Image" style="height: 200px; object-fit: cover;">
+            <img :src="event.imageUrl || 'https://placehold.co/300x200?text=Event+Image'" class="card-img-top" alt="Event Image" style="height: 200px; object-fit: cover;">
             <div class="card-body">
               <h5 class="card-title">{{ event.name }}</h5>
               <p class="card-text">{{ event.description ? event.description.substring(0, 100) + (event.description.length > 100 ? '...' : '') : 'No description available.' }}</p>
@@ -145,36 +145,28 @@
   <Footer />
 </template>
 
-<script>
-import navbar from "@/components/Navbar.vue";
-import Footer from "@/components/Footer.vue";
-import { fetchEvents } from "@/api/eventServices.js";
+<script setup>
+import { ref, onMounted } from 'vue';
+import navbar from '@/components/Navbar.vue';
+import Footer from '@/components/Footer.vue';
+import { fetchEvents } from '@/api/eventServices.js';
 
-export default {
-  components: {
-    navbar,
-    Footer
-  },
-  data() {
-    return {
-      events: [],
-      isLoading: false,
-      error: null,
-    };
-  },
-  async mounted() {
-    this.isLoading = true;
-    try {
-      const response = await fetchEvents({ limit: 3 }, { isPublicView: true }); 
-      this.events = response.events; 
-    } catch (err) {
-      this.error = "Failed to load events.";
-      console.error("Error fetching events for homepage:", err);
-    } finally {
-      this.isLoading = false;
-    }
-  },
-};
+const events = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+
+onMounted(async () => {
+  isLoading.value = true;
+  try {
+    const response = await fetchEvents({ limit: 3 }, { isPublicView: true });
+    events.value = response.events;
+  } catch (err) {
+    error.value = 'Failed to load events.';
+    console.error('Error fetching events for homepage:', err);
+  } finally {
+    isLoading.value = false;
+  }
+});
 </script>
 
 <style scoped>
