@@ -159,155 +159,140 @@
   </div>
 </template>
 
-<script>
-import navbar from "@/components/Navbar.vue";
-import Footer from "@/components/Footer.vue";
-import router from "@/router";
-import { useUserStore } from "@/store/userStore";
-import { registerUser } from "@/api/authServices.js"; // Import the new service
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from '@/store/userStore';
+import { registerUser } from '@/api/authServices.js';
+import navbar from '@/components/Navbar.vue';
+import Footer from '@/components/Footer.vue';
 
-export default {
-  components: {
-    navbar,
-    Footer,
-  },
+const router = useRouter();
+const userStore = useUserStore();
 
-  data() {
-    return {
-      firstName: "",
-      lastName: "",
-      phoneNo: "",
-      email: "", // Initialize as empty string
-      pwd: "",
-      confirmPwd: "",
-      errors: { // Initialize all possible error keys
-        firstName: null,
-        lastName: null,
-        phoneNo: null,
-        email: null,
-        pwd: null,
-        confirmPwd: null,
-        general: null,
-      },
-      isLoading: false, // For loading state
-    };
-  },
+const firstName = ref('');
+const lastName = ref('');
+const phoneNo = ref('');
+const email = ref('');
+const pwd = ref('');
+const confirmPwd = ref('');
+const errors = ref({
+  firstName: null,
+  lastName: null,
+  phoneNo: null,
+  email: null,
+  pwd: null,
+  confirmPwd: null,
+  general: null,
+});
+const isLoading = ref(false);
 
-  mounted() {
-    this.checkState();
-  },
+onMounted(() => {
+  if (userStore.isAuthenticated) {
+    router.push('/');
+  }
+});
 
-  methods: {
-    // Prevent going to SignUp after login already
-    checkState() {
-      const userStore = useUserStore();
-      if (userStore.isAuthenticated) {
-        console.log("User state verified, redirecting to home.");
-        router.push("/");
-      }
-    },
+const validateForm = () => {
+  errors.value = {
+    firstName: null,
+    lastName: null,
+    phoneNo: null,
+    email: null,
+    pwd: null,
+    confirmPwd: null,
+    general: null,
+  };
+  let isValid = true;
 
-    validateForm() {
-      // Clear previous errors
-      this.errors = { 
-        firstName: null, lastName: null, phoneNo: null, 
-        email: null, pwd: null, confirmPwd: null, general: null 
-      };
-      let isValid = true;
+  const namePattern = /^[A-Za-z\s]+$/;
+  if (!firstName.value.trim() || !namePattern.test(firstName.value.trim())) {
+    errors.value.firstName = 'First name is required and can only contain letters and spaces.';
+    isValid = false;
+  }
+  if (!lastName.value.trim() || !namePattern.test(lastName.value.trim())) {
+    errors.value.lastName = 'Last name is required and can only contain letters and spaces.';
+    isValid = false;
+  }
 
-      const namePattern = /^[A-Za-z\s]+$/; // Allow spaces in names
-      if (!this.firstName.trim() || !namePattern.test(this.firstName.trim())) {
-        this.errors.firstName = "First name is required and can only contain letters and spaces.";
-        isValid = false;
-      }
-      if (!this.lastName.trim() || !namePattern.test(this.lastName.trim())) {
-        this.errors.lastName = "Last name is required and can only contain letters and spaces.";
-        isValid = false;
-      }
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email.value || !emailPattern.test(email.value)) {
+    errors.value.email = 'Please enter a valid email address.';
+    isValid = false;
+  }
 
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!this.email || !emailPattern.test(this.email)) {
-        this.errors.email = "Please enter a valid email address.";
-        isValid = false;
-      }
-      
-      // Password length (backend might have its own rules, align if necessary)
-      if (!this.pwd || this.pwd.length < 8) { // Example: min 8 characters
-        this.errors.pwd = "Password must be at least 8 characters long.";
-        isValid = false;
-      }
-      // Basic password complexity (example)
-      // const passwordCharacter = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
-      // if (!passwordCharacter.test(this.pwd)) {
-      //   this.errors.pwd = (this.errors.pwd ? this.errors.pwd + " " : "") + "Password must include uppercase, lowercase, and a number.";
-      //   isValid = false;
-      // }
+  if (!pwd.value || pwd.value.length < 8) {
+    errors.value.pwd = 'Password must be at least 8 characters long.';
+    isValid = false;
+  } else {
+    const passwordCharacter = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+    if (!passwordCharacter.test(pwd.value)) {
+      errors.value.pwd = 'Password must include uppercase, lowercase, and a number.';
+      isValid = false;
+    }
+  }
 
-      if (this.confirmPwd !== this.pwd) {
-        this.errors.confirmPwd = "Passwords do not match.";
-        isValid = false;
-      }
+  if (confirmPwd.value !== pwd.value) {
+    errors.value.confirmPwd = 'Passwords do not match.';
+    isValid = false;
+  }
 
-      const phonePattern = /^[0-9+()\s-]*$/; // More flexible phone pattern
-      if (this.phoneNo.trim() && !phonePattern.test(this.phoneNo.trim())) {
-        this.errors.phoneNo = "Please enter a valid phone number.";
-        isValid = false;
-      }
-      // Note: phoneNo is optional on backend, so empty is fine unless you make it required here.
+  const phonePattern = /^[0-9+()\s-]*$/;
+  if (phoneNo.value.trim() && !phonePattern.test(phoneNo.value.trim())) {
+    errors.value.phoneNo = 'Please enter a valid phone number.';
+    isValid = false;
+  }
 
-      return isValid;
-    },
+  return isValid;
+};
 
-    async signUp() {
-      if (!this.validateForm()) {
-        return;
-      }
+const signUp = async () => {
+  if (!validateForm()) {
+    return;
+  }
 
-      this.isLoading = true;
-      this.errors.general = null;
-      const userStore = useUserStore();
+  isLoading.value = true;
+  errors.value.general = null;
 
-      const userData = {
-        email: this.email.trim(),
-        password: this.pwd, // Password is not trimmed
-        firstName: this.firstName.trim(),
-        lastName: this.lastName.trim(),
-        phoneNo: this.phoneNo.trim() || undefined, // Send undefined if empty, as it's optional
-      };
+  const userData = {
+    email: email.value.trim(),
+    password: pwd.value,
+    confirmPassword: confirmPwd.value,
+    firstName: firstName.value.trim(),
+    lastName: lastName.value.trim(),
+    phoneNo: phoneNo.value.trim() || undefined,
+  };
 
-      try {
-        const authData = await registerUser(userData);
-        // authData should be { user, accessToken }
-
-        if (authData && authData.user && authData.accessToken) {
-          userStore.setAuthData(authData.user, authData.accessToken);
-          router.push("/"); // Navigate to home or dashboard
+  try {
+    const authData = await registerUser(userData);
+    if (authData && authData.user && authData.accessToken) {
+      userStore.setAuthData(authData.user, authData.accessToken);
+      router.push('/');
+    } else {
+      errors.value.general = 'Registration successful but received unexpected data.';
+    }
+  } catch (error) {
+    if (error.response && error.response.data && error.response.data.details) {
+      // Handle Joi validation errors
+      error.response.data.details.forEach(detail => {
+        const key = detail.context.key;
+        if (errors.value.hasOwnProperty(key)) {
+          errors.value[key] = detail.message;
         } else {
-          this.errors.general = "Registration successful but received unexpected data.";
-          console.error("Registration response missing user or accessToken:", authData);
+          errors.value.general = detail.message;
         }
-      } catch (error) {
-        console.error("Registration error caught in component:", error);
-        if (error && error.message) {
-          // If the error message is "Email already registered", show it.
-          // Otherwise, a generic message.
-          if (error.message.toLowerCase().includes('email already registered')) {
-            this.errors.email = error.message; // Or a more user-friendly version
-          } else {
-            this.errors.general = error.message;
-          }
-        } else if (typeof error === 'string') {
-          this.errors.general = error;
-        }
-         else {
-          this.errors.general = "An unexpected error occurred during registration. Please try again.";
-        }
-      } finally {
-        this.isLoading = false;
-      }
-    },
-  },
-  computed: {},
+      });
+    } else if (error.response && error.response.data && error.response.data.message) {
+        errors.value.general = error.response.data.message;
+    }
+    else if (error.message) {
+      errors.value.general = error.message;
+    } else {
+      errors.value.general = 'An unexpected error occurred during registration.';
+    }
+  } finally {
+    isLoading.value = false;
+  }
 };
 </script>
 

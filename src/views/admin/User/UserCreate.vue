@@ -2,56 +2,45 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import AdminLayout from '@/views/admin/AdminLayout.vue'
+import { createUser } from "@/api/userServices";
 
 const router = useRouter();
+
+const firstName = ref('');
+const lastName = ref('');
+const phoneNo = ref('');
+const email = ref('');
+const password = ref('');
+const role = ref('PARTICIPANT');
+const error = ref(null);
 
 const cancelCreate = () => {
   router.push("/admin/users");
 };
-</script>
 
-<script>
-import { createUser } from "@/api/userServices";
-import router from "@/router";
-
-export default {
-  data() {
-    return {
-      firstName: "",
-      lastName: "",
-      phoneNo: "",
-      email: null,
-      password: "",
-      role: "",
-    };
-  },
-
-  methods: {
-    async createNewUser() {
-      const userData = {
-        firstName: this.firstName,
-        lastName: this.lastName,
-        phoneNo: this.phoneNo,
-        email: this.email,
-        password: this.password,
-        role: this.role,
-      };
-      const message = await createUser(userData);
-      if (message) {
-        router.push("/admin/users");
-      } else {
-        // Display ERROR
-        window.alert("Error");
-      }
-    },
-  },
+const createNewUser = async () => {
+  error.value = null;
+  const userData = {
+    firstName: firstName.value,
+    lastName: lastName.value,
+    phoneNo: phoneNo.value,
+    email: email.value,
+    password: password.value,
+    role: role.value,
+  };
+  try {
+    await createUser(userData);
+    router.push("/admin/users");
+  } catch (err) {
+    error.value = err.message || 'An error occurred while creating the user.';
+  }
 };
 </script>
 
 <template>
   <AdminLayout>
     <div class="container py-4">
-      <!-- 页面头部 -->
+      <!-- Page Header -->
       <div class="d-flex align-items-center mb-4">
         <button
           @click="cancelCreate"
@@ -64,11 +53,11 @@ export default {
         <h1 class="display-6 mb-0">Create New User</h1>
       </div>
 
-      <!-- 用户新建表单卡片 -->
+      <!-- User creation form card -->
       <div class="card shadow-sm">
         <div class="card-body">
           <form @submit.prevent="createNewUser">
-            <!-- 姓名输入区域 -->
+            <!-- Name input area -->
             <div class="mb-3 row">
               <div class="col-md-6">
                 <label for="first_name" class="form-label">First Name</label>
@@ -93,7 +82,7 @@ export default {
                 />
               </div>
             </div>
-            <!-- 邮箱输入区域 -->
+            <!-- Email input area -->
             <div class="mb-3">
               <label for="email" class="form-label">Email</label>
               <input
@@ -105,7 +94,7 @@ export default {
                 required
               />
             </div>
-            <!-- 电话输入区域 -->
+            <!-- Phone input area -->
             <div class="mb-3">
               <label for="phone_no" class="form-label">Phone Number</label>
               <input
@@ -117,7 +106,7 @@ export default {
                 required
               />
             </div>
-            <!-- 角色下拉选择 -->
+            <!-- Role dropdown selection -->
             <div class="mb-3">
               <label for="role" class="form-label">Role</label>
               <select id="role" v-model="role" class="form-select" required>
@@ -137,7 +126,11 @@ export default {
                 required
               />
             </div>
-            <!-- 按钮区域 -->
+            <!-- Error Display -->
+            <div v-if="error" class="alert alert-danger mt-3" role="alert">
+              {{ error }}
+            </div>
+            <!-- Button area -->
             <div class="d-flex justify-content-end">
               <button
                 type="button"

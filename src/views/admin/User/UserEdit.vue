@@ -4,27 +4,28 @@ import { useRoute, useRouter } from "vue-router";
 import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { fetchUserById, updateUser } from "@/api/userServices";
 
-// 获取路由和路由器实例
+// Get route and router instances
 const route = useRoute();
 const router = useRouter();
 
 const userId = route.params.userId;
 
-// 定义响应式对象，用于存储查找到的用户和表单数据
+// Define reactive objects for storing the found user and form data
 const user = ref(null);
 const form = ref({
-  first_name: "",
-  last_name: "",
+  firstName: "",
+  lastName: "",
   email: "",
-  phone_no: "",
+  phoneNo: "",
   role: "",
 });
+const error = ref(null);
 
-// 页面加载后查找对应的用户，并初始化表单数据
+// Fetch the corresponding user after the page loads and initialize the form data
 onMounted(async () => {
   user.value = await fetchUserById(userId);
   if (user.value) {
-    // 将查找到的用户数据复制到表单中
+    // Copy the found user data to the form
     form.value = {
       firstName: user.value.firstName,
       lastName: user.value.lastName,
@@ -37,6 +38,7 @@ onMounted(async () => {
 });
 
 const updateUserData = async () => {
+  error.value = null;
   const userData = {
     firstName: form.value.firstName,
     lastName: form.value.lastName,
@@ -45,68 +47,24 @@ const updateUserData = async () => {
     role: form.value.role,
   };
 
-  const message = await updateUser(userId, userData);
-
-  console.log(message)
-  if (message) {
-    // If update successful, then move to that user's detail
+  try {
+    await updateUser(userId, userData);
     router.push(`/admin/users/${userId}`);
-  } else {
-    window.alert("Error");
+  } catch (err) {
+    error.value = err.message || 'An error occurred while updating the user.';
   }
 };
 
-// 取消编辑，返回用户列表
+// Cancel editing and return to the user list
 const cancelEdit = () => {
   router.push("/admin/users");
 };
 </script>
 
-<!-- <script>
-import router from "@/router";
-import { updateUser } from "@/api/users";
-
-export default {
-  data() {
-    return {
-      firstName: "",
-      lastName: "",
-      phoneNo: "",
-      email: "",
-      role: "",
-      userId: this.$route.params.userId,
-    };
-  },
-
-  methods: {
-    async updateUserData() {
-      const userData = {
-        firstName: this.firstName,
-        lastName: this.lastName,
-        phoneNo: this.phoneNo,
-        email: this.email,
-        role: this.role,
-      };
-
-      console.log(userData);
-
-      const message = await updateUser(this.userId, userData);
-
-      if (message == "Successful") {
-        // If update successful, then move to that user's detail
-        // router.push(`/admin/users/${this.userId}`);
-      } else {
-        window.alert("Error");
-      }
-    },
-  },
-};
-</script> -->
-
 <template>
   <AdminLayout>
     <div class="container py-4">
-      <!-- 页面头部，包含返回按钮 -->
+      <!-- Page header with back button -->
       <div class="d-flex align-items-center mb-4">
         <button
           @click="cancelEdit"
@@ -119,11 +77,11 @@ export default {
         <h1 class="display-6 mb-0">Edit User</h1>
       </div>
 
-      <!-- 用户编辑表单 -->
+      <!-- User edit form -->
       <div v-if="user" class="card shadow-sm">
         <div class="card-body">
           <form @submit.prevent="updateUserData">
-            <!-- 姓名 -->
+            <!-- Name -->
             <div class="mb-3 row">
               <div class="col-md-6">
                 <label for="first_name" class="form-label">First Name</label>
@@ -144,7 +102,7 @@ export default {
                 />
               </div>
             </div>
-            <!-- 邮箱 -->
+            <!-- Email -->
             <div class="mb-3">
               <label for="email" class="form-label">Email</label>
               <input
@@ -154,7 +112,7 @@ export default {
                 class="form-control"
               />
             </div>
-            <!-- 电话 -->
+            <!-- Phone -->
             <div class="mb-3">
               <label for="phone_no" class="form-label">Phone</label>
               <input
@@ -164,7 +122,7 @@ export default {
                 class="form-control"
               />
             </div>
-            <!-- 角色选择 -->
+            <!-- Role selection -->
             <div class="mb-3">
               <label for="role" class="form-label">Role</label>
               <select id="role" v-model="form.role" class="form-select">
@@ -173,7 +131,11 @@ export default {
                 <option value="PARTICIPANT">PARTICIPANT</option>
               </select>
             </div>
-            <!-- 按钮区域 -->
+            <!-- Error Display -->
+            <div v-if="error" class="alert alert-danger mt-3" role="alert">
+              {{ error }}
+            </div>
+            <!-- Button area -->
             <div class="d-flex justify-content-end">
               <button
                 type="button"
@@ -190,7 +152,7 @@ export default {
         </div>
       </div>
 
-      <!-- 如果没有找到用户则显示提示信息 -->
+      <!-- Show a message if the user is not found -->
       <div v-else class="alert alert-danger" role="alert">User not found.</div>
     </div>
   </AdminLayout>
