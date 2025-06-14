@@ -1,10 +1,19 @@
 <template>
   <div class="event-report-view p-4">
-    <!-- Back button -->
-    <button @click="router.back()" class="text-blue-600 hover:text-blue-800 mb-4 flex items-center">
-      <i class="pi pi-arrow-left mr-2"></i>
-      Back to Event Details
-    </button>
+    <div class="flex justify-between items-center mb-4">
+      <!-- Back button -->
+      <button @click="router.back()" class="text-blue-600 hover:text-blue-800 flex items-center">
+        <i class="pi pi-arrow-left mr-2"></i>
+        Back to Event Details
+      </button>
+
+      <!-- Export to PDF button -->
+      <button @click="generatePDF"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded flex items-center">
+        <i class="pi pi-file-pdf mr-2"></i>
+        Export to PDF
+      </button>
+    </div>
 
     <h1 class="text-2xl font-bold mb-6">Event Report</h1>
 
@@ -144,6 +153,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router'; // Added useRouter
 import { getEventReport } from '../../../api/eventServices'; // Adjusted path
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const route = useRoute();
 const router = useRouter(); // Instantiate useRouter
@@ -214,6 +225,107 @@ const isExpanded = (participantEmail) => {
 onMounted(() => {
   fetchReportData();
 });
+
+const generatePDF = () => {
+  if (!reportData.value) return;
+
+  const doc = new jsPDF();
+  const report = reportData.value;
+
+  // Title
+  doc.setFontSize(18);
+  doc.text(report.eventName, 14, 22);
+
+  // Event Info
+  doc.setFontSize(11);
+  doc.text(`Description: ${report.eventDescription}`, 14, 32);
+  doc.text(`Date: ${formatDate(report.start)} at ${formatTime(report.start)} - ${formatDate(report.end)} at ${formatTime(report.end)}`, 14, 42);
+
+  // Sales Summary
+  autoTable(doc, {
+    startY: 50,
+    head: [['Sales Summary', '']],
+    body: [
+      ['Total Tickets Sold', report.sales.totalTickets],
+      ['Total Revenue', `$${report.sales.revenue.toFixed(2)}`],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: [22, 160, 133] },
+  });
+
+  // Tickets Sold by Type
+  autoTable(doc, {
+    head: [['Tickets Sold by Type', 'Total']],
+    body: report.sales.soldByTickets.map(t => [t.name, t.total]),
+    theme: 'striped',
+    headStyles: { fillColor: [22, 160, 133] },
+  });
+
+  // Revenue by Ticket Type
+  autoTable(doc, {
+    head: [['Revenue by Ticket Type', 'Total']],
+    body: report.sales.revenueByTickets.map(t => [t.name, `$${t.total.toFixed(2)}`]),
+    theme: 'striped',
+    headStyles: { fillColor: [22, 160, 133] },
+  });
+
+  // Remaining Tickets
+  autoTable(doc, {
+    head: [['Remaining Tickets', '']],
+    body: [
+      ['Total Remaining Tickets', report.remaining.remainingTickets],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: [41, 128, 185] },
+  });
+
+  // Remaining by Ticket Type
+  autoTable(doc, {
+    head: [['Remaining by Ticket Type', 'Total']],
+    body: report.remaining.remainingByTicket.map(t => [t.name, t.total]),
+    theme: 'striped',
+    headStyles: { fillColor: [41, 128, 185] },
+  });
+
+  // Participants
+  const participantData = report.participants.map(p => [
+    p.name,
+    p.email,
+    p.ticket,
+    p.registrationStatus,
+    p.questionnaireResponses.map(qr => `${qr.question}: ${formatQuestionnaireResponse(qr.response)}`).join('\n')
+  ]);
+
+  autoTable(doc, {
+    head: [['Name', 'Email', 'Ticket Type', 'Status', 'Questionnaire Responses']],
+    body: participantData,
+    theme: 'striped',
+    headStyles: { fillColor: [243, 156, 18] },
+  });
+
+  // Aggregated Question Responses
+  if (Object.keys(report.questions).length > 0) {
+    doc.addPage();
+    doc.text('Aggregated Question Responses', 14, 22);
+    let y = 30;
+    for (const question in report.questions) {
+      const responses = report.questions[question];
+      const responseData = Object.entries(responses).map(([option, count]) => [option, count]);
+      autoTable(doc, {
+        startY: y,
+        head: [[question, 'Count']],
+        body: responseData,
+        theme: 'striped',
+        headStyles: { fillColor: [211, 84, 0] },
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    }
+  }
+
+
+  doc.save(`${report.eventName.replace(/\s/g, '_')}_report.pdf`);
+};
+
 </script>
 
 <style scoped>
