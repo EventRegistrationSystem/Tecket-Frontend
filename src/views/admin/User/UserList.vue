@@ -32,19 +32,16 @@ const getRoleText = (role) => {
 const filteredUsers = computed(() => {
   return usersData.value
     .filter(user => {
-      if (roleFilter.value !== 'all' && user.role.toString() !== roleFilter.value) {
-        return false
-      }
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase()
-        return (
-          (user.firstName + ' ' + user.lastName).toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          user.phoneNo.toLowerCase().includes(query) ||
-          getRoleText(user.role).toLowerCase().includes(query)
-        )
-      }
-      return true
+      const roleMatch = roleFilter.value === 'all' || user.role === roleFilter.value;
+
+      const searchMatch = !searchQuery.value || (
+        (user.firstName + ' ' + user.lastName).toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        (user.phoneNo && user.phoneNo.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+        getRoleText(user.role).toLowerCase().includes(searchQuery.value.toLowerCase())
+      );
+
+      return roleMatch && searchMatch;
     })
     .sort((a, b) => {
       let comparison = 0
