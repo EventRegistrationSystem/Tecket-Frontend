@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
 import { fetchEventDetails, updateEventStatus } from '@/api/eventServices.js'
+import { parseDate, parseTime } from './utils/eventFormUtils.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -121,6 +122,7 @@ const editEventWithTab = (tabName) => {
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
+  
   const dateObj = new Date(dateString)
   if (isNaN(dateObj)) return ''
   return dateObj.toLocaleDateString('en-AU', {
@@ -132,12 +134,7 @@ const formatDate = (dateString) => {
 
 const formatTime = (dateString) => {
   if (!dateString) return ''
-  const dateObj = new Date(dateString)
-  if (isNaN(dateObj)) return ''
-  return dateObj.toLocaleTimeString('en-AU', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return parseTime(dateString)
 }
 
 const formatCurrency = (value) => {
@@ -190,7 +187,7 @@ const getStatusClass = (status) => {
               <span :class="getStatusClass(event.status)" class="px-2 py-1 rounded-pill small fw-semibold me-2">
                 {{ event.status }}
               </span>
-              <span class="text-muted">{{ formatDate(event.startDateTime) }}</span>
+              <span class="text-muted">{{ parseDate(event.startDateTime) }}</span>
             </div>
           </div>
           <div class="mt-4 mt-md-0 d-flex align-items-center gap-2">
@@ -226,11 +223,13 @@ const getStatusClass = (status) => {
 
                 <div class="row g-4 mt-3">
                   <div class="col-12 col-md-6">
-                    <h3 class="fs-6 fw-semibold text-muted mb-1">Date and Time</h3>
-                    <p class="text-dark mb-0">{{ formatDate(event.startDateTime) }}</p>
-                    <p class="text-dark">
-                      {{ formatTime(event.startDateTime) }} - {{ formatTime(event.endDateTime) }}
-                    </p>
+                    <h3 class="fs-6 fw-semibold text-muted mb-1">Start Date & Time</h3>
+                    <p class="text-dark mb-0">{{ parseDate(event.startDateTime) }} at {{ formatTime(event.startDateTime) }}</p>
+                  </div>
+
+                  <div class="col-12 col-md-6">
+                    <h3 class="fs-6 fw-semibold text-muted mb-1">End Date & Time</h3>
+                    <p class="text-dark mb-0">{{ parseDate(event.endDateTime) }} at {{ formatTime(event.endDateTime) }}</p>
                   </div>
 
                   <div class="col-12 col-md-6">
@@ -322,7 +321,7 @@ const getStatusClass = (status) => {
                           <td class="px-3 py-2 text-dark">{{ ticket.quantitySold }}</td>
                           <td class="px-3 py-2 text-dark">{{ ticket.quantityTotal - ticket.quantitySold }}</td>
                           <td class="px-3 py-2 text-dark">{{ ticket.quantityTotal }}</td>
-                          <td class="px-3 py-2 text-dark">{{ formatDate(ticket.salesEnd) }}</td>
+                          <td class="px-3 py-2 text-dark">{{ parseDate(ticket.salesEnd) }}</td>
                         </tr>
                         <tr v-if="!ticketTypes.length">
                           <td colspan="6" class="text-center text-muted p-3">No tickets configured for this event.</td>
