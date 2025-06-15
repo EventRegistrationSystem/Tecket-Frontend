@@ -303,17 +303,18 @@ const saveEvent = async () => {
       const originalTicketIds = originalTicketTypes.value.map(t => t.id);
       const currentTicketIds = ticketTypes.value.map(t => t.id).filter(id => id);
 
-      for (const ticket of ticketTypes.value) {
-        const payload = getTicketPayload(ticket);
-        if (ticket.id) { // Existing ticket
-          const originalTicket = originalTicketTypes.value.find(t => t.id === ticket.id);
-          if (JSON.stringify(getTicketPayload(originalTicket)) !== JSON.stringify(payload)) {
-            await updateTicketForEvent(currentEventId, ticket.id, payload);
-          }
-        } else { // New ticket
-          await createTicketForEvent(currentEventId, payload);
+    for (const ticket of ticketTypes.value) {
+      const payload = getTicketPayload(ticket);
+      if (ticket.id && originalTicketTypes.value.some(t => t.id === ticket.id)) { // Existing ticket
+        const originalTicket = originalTicketTypes.value.find(t => t.id === ticket.id);
+        // Ensure originalTicket is not undefined before comparing
+        if (originalTicket && JSON.stringify(getTicketPayload(originalTicket)) !== JSON.stringify(payload)) {
+          await updateTicketForEvent(currentEventId, ticket.id, payload);
         }
+      } else { // New ticket
+        await createTicketForEvent(currentEventId, payload);
       }
+    }
 
       for (const originalTicket of originalTicketTypes.value) {
         if (!currentTicketIds.includes(originalTicket.id)) {
@@ -325,17 +326,18 @@ const saveEvent = async () => {
       const originalQuestionIds = originalQuestions.value.map(q => q.id);
       const currentQuestionIds = questions.value.map(q => q.id).filter(id => id);
 
-      for (const [index, question] of questions.value.entries()) {
-        const payload = getQuestionPayload(question, index);
-        if (question.id) { // Existing question
-          const originalQuestion = originalQuestions.value.find(q => q.id === question.id);
-          if (JSON.stringify(getQuestionPayload(originalQuestion, index)) !== JSON.stringify(payload)) {
-            await updateEventQuestion(currentEventId, question.id, payload);
-          }
-        } else { // New question
-          await createEventQuestion(currentEventId, payload);
+    for (const [index, question] of questions.value.entries()) {
+      const payload = getQuestionPayload(question, index);
+      if (question.id && originalQuestions.value.some(q => q.id === question.id)) { // Existing question
+        const originalQuestion = originalQuestions.value.find(q => q.id === question.id);
+        // Ensure originalQuestion is not undefined before comparing
+        if (originalQuestion && JSON.stringify(getQuestionPayload(originalQuestion, index)) !== JSON.stringify(payload)) {
+          await updateEventQuestion(currentEventId, question.id, payload);
         }
+      } else { // New question
+        await createEventQuestion(currentEventId, payload);
       }
+    }
 
       for (const originalQuestion of originalQuestions.value) {
         if (!currentQuestionIds.includes(originalQuestion.id)) {
