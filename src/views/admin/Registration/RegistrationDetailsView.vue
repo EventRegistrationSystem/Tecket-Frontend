@@ -112,7 +112,7 @@
           <div v-if="updateStatusSuccessMessage" class="alert alert-success">{{ updateStatusSuccessMessage }}</div>
           <div v-if="updateStatusError" class="alert alert-danger">{{ updateStatusError }}</div>
 
-          <div class="row align-items-end">
+          <div v-if="registrationDetails.status !== 'CANCELLED'" class="row align-items-end">
             <div class="col-md-4 mb-3">
               <label for="statusSelect" class="form-label">New Status:</label>
               <select id="statusSelect" class="form-select" v-model="selectedStatus" :disabled="isUpdatingStatus">
@@ -123,13 +123,16 @@
             </div>
             <div class="col-md-auto mb-3">
               <button class="btn btn-primary" @click="handleUpdateStatus"
-                :disabled="isUpdatingStatus || !selectedStatus || (registrationDetails && selectedStatus === registrationDetails.status)">
+                :disabled="isUpdatingStatus || !selectedStatus || selectedStatus === registrationDetails.status">
                 <span v-if="isUpdatingStatus" class="spinner-border spinner-border-sm" role="status"
                   aria-hidden="true"></span>
                 <span v-if="isUpdatingStatus"> Updating...</span>
                 <span v-else>Update Status</span>
               </button>
             </div>
+          </div>
+          <div v-else>
+            <p class="text-muted">The status of a cancelled registration cannot be changed.</p>
           </div>
           <!-- Other actions like Edit Details, Export can be added here -->
           <hr class="my-4">
@@ -302,7 +305,4 @@ const getStatusClass = (status) => {
 </script>
 
 <style scoped>
-/* Add any component-specific styles here if needed */
-/* Ensure PrimeIcons are globally available or import them if needed */
-/* For example: @import 'primeicons/primeicons.css'; if not already in main.js or similar */
 </style>

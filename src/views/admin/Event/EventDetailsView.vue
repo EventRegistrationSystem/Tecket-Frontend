@@ -112,6 +112,10 @@ const viewEventReport = () => {
   router.push(`/admin/events/${eventId}/report`)
 }
 
+const viewRegistrations = () => {
+  router.push(`/admin/events/${eventId}/registrations`)
+}
+
 // Function to navigate to edit event form with a specific tab active
 const editEventWithTab = (tabName) => {
   router.push({
@@ -377,6 +381,11 @@ const getStatusClass = (status) => {
                   type="button">
                   <i class="pi pi-chart-bar me-2"></i>
                   View Reports
+                </button>
+                <button @click="viewRegistrations" class="btn btn-outline-info w-100 d-flex align-items-center"
+                  type="button">
+                  <i class="pi pi-users me-2"></i>
+                  View Registrations
                 </button>
               </div>
             </div>

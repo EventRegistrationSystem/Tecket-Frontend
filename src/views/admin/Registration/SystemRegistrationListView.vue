@@ -34,7 +34,7 @@
               style="max-width: 10rem;" />
             <input v-model="participantIdFilter" type="number" placeholder="Filter by Participant ID"
               class="form-control" style="max-width: 12rem;" />
-            <!-- Add Ticket ID filter if needed later -->
+            
           </div>
           <!-- Placeholder for potential future buttons like "Export" -->
         </div>
